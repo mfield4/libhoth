@@ -181,7 +181,7 @@ char* with_hoth_id(const char* base, char delimiter, const char* hoth_id) {
     return NULL;
   }
 
-  strcpy(ret, base);
+  memcpy(ret, base, base_len);
 
   if (hoth_id_len == 0) {
     // Nothing to append.
@@ -190,7 +190,7 @@ char* with_hoth_id(const char* base, char delimiter, const char* hoth_id) {
 
   // Append delimiter and hoth_id.
   ret[base_len] = delimiter;
-  strcpy(ret + base_len + 1, hoth_id);
+  memcpy(ret + base_len + 1, hoth_id, hoth_id_len);
   return ret;
 }
 
