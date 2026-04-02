@@ -16,9 +16,13 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <unistd.h>
 
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <memory>
+#include <string>
 
 #include "command_version.h"
 #include "payload_info.h"
@@ -38,11 +42,31 @@ constexpr int64_t kAlign = 1 << 16;
 constexpr int64_t kDummy = 0;
 
 MATCHER_P2(IsEraseRequest, offset, len, "") {
-  const uint8_t* data = static_cast<const uint8_t*>(arg);
+  const struct hoth_host_request* req =
+      static_cast<const struct hoth_host_request*>(arg);
+  if (req->struct_version != HOTH_HOST_REQUEST_VERSION ||
+      req->command != kCmd) {
+    return false;
+  }
   const struct payload_update_packet* p =
       reinterpret_cast<const struct payload_update_packet*>(
-          data + sizeof(struct hoth_host_request));
+          static_cast<const uint8_t*>(arg) + sizeof(struct hoth_host_request));
   return p->type == PAYLOAD_UPDATE_ERASE &&
+         p->offset == static_cast<uint32_t>(offset) &&
+         p->len == static_cast<uint32_t>(len);
+}
+
+MATCHER_P2(IsReadRequest, offset, len, "") {
+  const struct hoth_host_request* req =
+      static_cast<const struct hoth_host_request*>(arg);
+  if (req->struct_version != HOTH_HOST_REQUEST_VERSION ||
+      req->command != kCmd) {
+    return false;
+  }
+  const struct payload_update_packet* p =
+      reinterpret_cast<const struct payload_update_packet*>(
+          static_cast<const uint8_t*>(arg) + sizeof(struct hoth_host_request));
+  return p->type == PAYLOAD_UPDATE_READ &&
          p->offset == static_cast<uint32_t>(offset) &&
          p->len == static_cast<uint32_t>(len);
 }
@@ -206,6 +230,74 @@ TEST_F(LibHothTest, payload_update_finalize_fail) {
             PAYLOAD_UPDATE_FINALIZE_FAIL);
 }
 
+TEST_F(LibHothTest, payload_update_activate_v0) {
+  {
+    InSequence s;
+
+    EXPECT_CALL(mock_, send(_, UsesCommand(HOTH_CMD_GET_CMD_VERSIONS), _))
+        .WillOnce(Return(LIBHOTH_OK));
+    EXPECT_CALL(mock_, send(_, UsesCommand(kCmd), _))
+        .WillOnce(Return(LIBHOTH_OK));
+  }
+
+  static constexpr uint32_t kVersionMask = 0;
+  EXPECT_CALL(mock_, receive)
+      .WillOnce(DoAll(CopyResp(&kVersionMask, sizeof(kVersionMask)),
+                      Return(LIBHOTH_OK)))
+      .WillOnce(DoAll(CopyResp(&kDummy, 0), Return(LIBHOTH_OK)));
+
+  uint8_t pld_needs_reinit = 0xff;
+  EXPECT_EQ(libhoth_payload_update_activate(&hoth_dev_, 1, &pld_needs_reinit),
+            PAYLOAD_UPDATE_OK);
+  EXPECT_EQ(pld_needs_reinit, 0);
+}
+
+TEST_F(LibHothTest, payload_update_activate_v1) {
+  {
+    InSequence s;
+
+    EXPECT_CALL(mock_, send(_, UsesCommand(HOTH_CMD_GET_CMD_VERSIONS), _))
+        .WillOnce(Return(LIBHOTH_OK));
+    EXPECT_CALL(mock_, send(_, UsesCommandWithVersion(kCmd, 1), _))
+        .WillOnce(Return(LIBHOTH_OK));
+  }
+
+  static constexpr uint32_t kVersionMask = 0x3;
+  static constexpr uint8_t kPldNeedsReinitialization = 1;
+  EXPECT_CALL(mock_, receive)
+      .WillOnce(DoAll(CopyResp(&kVersionMask, sizeof(kVersionMask)),
+                      Return(LIBHOTH_OK)))
+      .WillOnce(DoAll(CopyResp(&kPldNeedsReinitialization,
+                               sizeof(kPldNeedsReinitialization)),
+                      Return(LIBHOTH_OK)));
+
+  uint8_t pld_needs_reinit = 0xff;
+  EXPECT_EQ(libhoth_payload_update_activate(&hoth_dev_, 0, &pld_needs_reinit),
+            PAYLOAD_UPDATE_OK);
+  EXPECT_EQ(pld_needs_reinit, 1);
+}
+
+TEST_F(LibHothTest, payload_update_activate_fail) {
+  {
+    InSequence s;
+
+    EXPECT_CALL(mock_, send(_, UsesCommand(HOTH_CMD_GET_CMD_VERSIONS), _))
+        .WillOnce(Return(LIBHOTH_OK));
+    EXPECT_CALL(mock_, send(_, UsesCommand(kCmd), _))
+        .WillOnce(Return(LIBHOTH_OK));
+  }
+
+  static constexpr uint32_t kVersionMask = 0;
+  EXPECT_CALL(mock_, receive)
+      .WillOnce(DoAll(CopyResp(&kVersionMask, sizeof(kVersionMask)),
+                      Return(LIBHOTH_OK)))
+      .WillOnce(DoAll(CopyResp(&kDummy, 0), Return(-1)));
+
+  uint8_t pld_needs_reinit = 0xff;
+  EXPECT_EQ(libhoth_payload_update_activate(&hoth_dev_, 1, &pld_needs_reinit),
+            PAYLOAD_UPDATE_ACTIVATE_FAIL);
+}
+
 TEST_F(LibHothTest, payload_update_status) {
   EXPECT_CALL(mock_, send(_, UsesCommand(kCmd), _))
       .WillOnce(Return(LIBHOTH_OK));
@@ -222,6 +314,36 @@ TEST_F(LibHothTest, payload_update_status) {
 
   EXPECT_EQ(exp_us.a_valid, us.a_valid);
   EXPECT_EQ(exp_us.active_half, us.active_half);
+}
+
+TEST_F(LibHothTest, payload_update_verify) {
+  auto payload_verify_matcher = [](const void* reqdata) {
+    const struct payload_update_packet* payload_update_req_data =
+        (struct payload_update_packet*)reqdata;
+    return payload_update_req_data->type == PAYLOAD_UPDATE_VERIFY;
+  };
+  EXPECT_CALL(mock_,
+              send(_, UsesCommandWithData(kCmd, payload_verify_matcher), _))
+      .WillOnce(Return(LIBHOTH_OK));
+  EXPECT_CALL(mock_, receive)
+      .WillOnce(DoAll(CopyResp(&kDummy, 0), Return(LIBHOTH_OK)));
+
+  EXPECT_EQ(libhoth_payload_update_verify(&hoth_dev_), 0);
+}
+
+TEST_F(LibHothTest, payload_update_verify_descriptor) {
+  auto payload_verify_matcher = [](const void* reqdata) {
+    const struct payload_update_packet* payload_update_req_data =
+        (struct payload_update_packet*)reqdata;
+    return payload_update_req_data->type == PAYLOAD_UPDATE_VERIFY_DESCRIPTOR;
+  };
+  EXPECT_CALL(mock_,
+              send(_, UsesCommandWithData(kCmd, payload_verify_matcher), _))
+      .WillOnce(Return(LIBHOTH_OK));
+  EXPECT_CALL(mock_, receive)
+      .WillOnce(DoAll(CopyResp(&kDummy, 0), Return(LIBHOTH_OK)));
+
+  EXPECT_EQ(libhoth_payload_update_verify_descriptor(&hoth_dev_), 0);
 }
 
 TEST_F(LibHothTest, payload_update_erase_test) {
@@ -325,4 +447,104 @@ TEST_F(LibHothTest, payload_update_test_with_binary_image) {
                                    /*skip_erase=*/false,
                                    /*binary_file=*/true),
             PAYLOAD_UPDATE_OK);
+}
+
+TEST_F(LibHothTest, payload_update_erase_cmd_test) {
+  constexpr size_t kBlockErase = 64 * 1024;
+  constexpr size_t kSectorErase = 4 * 1024;
+  // Offset that is 1 sector before block boundary
+  constexpr size_t kOffset = kBlockErase - kSectorErase;
+  // Size to trigger 1 sector erase, 1 block erase, 1 sector erase
+  constexpr size_t kSize = kSectorErase + kBlockErase + kSectorErase;
+
+  {
+    InSequence s;
+
+    // Sector Erase to align to block boundary
+    EXPECT_CALL(mock_, send(_, IsEraseRequest(kOffset, kSectorErase), _))
+        .WillOnce(Return(LIBHOTH_OK));
+    EXPECT_CALL(mock_, receive)
+        .WillOnce(DoAll(CopyResp(&kDummy, 0), Return(LIBHOTH_OK)));
+
+    // Block Erase exactly at block boundary
+    EXPECT_CALL(mock_,
+                send(_, IsEraseRequest(kOffset + kSectorErase, kBlockErase), _))
+        .WillOnce(Return(LIBHOTH_OK));
+    EXPECT_CALL(mock_, receive)
+        .WillOnce(DoAll(CopyResp(&kDummy, 0), Return(LIBHOTH_OK)));
+
+    // Sector Erase for the remaining tail
+    EXPECT_CALL(mock_, send(_,
+                            IsEraseRequest(kOffset + kSectorErase + kBlockErase,
+                                           kSectorErase),
+                            _))
+        .WillOnce(Return(LIBHOTH_OK));
+    EXPECT_CALL(mock_, receive)
+        .WillOnce(DoAll(CopyResp(&kDummy, 0), Return(LIBHOTH_OK)));
+  }
+
+  EXPECT_EQ(libhoth_payload_update_erase(&hoth_dev_, kOffset, kSize),
+            PAYLOAD_UPDATE_OK);
+}
+
+TEST_F(LibHothTest, payload_update_erase_cmd_unaligned_offset_test) {
+  constexpr size_t kSize = 4 * 1024;
+  constexpr size_t kOffset = 1;
+
+  EXPECT_EQ(libhoth_payload_update_erase(&hoth_dev_, kOffset, kSize),
+            PAYLOAD_UPDATE_IMAGE_NOT_SECTOR_ALIGNED);
+}
+
+TEST_F(LibHothTest, payload_update_erase_cmd_unaligned_size_test) {
+  constexpr size_t kSize = 4 * 1024 + 1;
+  constexpr size_t kOffset = 4 * 1024;
+
+  EXPECT_EQ(libhoth_payload_update_erase(&hoth_dev_, kOffset, kSize),
+            PAYLOAD_UPDATE_IMAGE_NOT_SECTOR_ALIGNED);
+}
+
+TEST_F(LibHothTest, payload_update_erase_cmd_zero_size_test) {
+  constexpr size_t kSize = 0;
+  constexpr size_t kOffset = 0;
+
+  EXPECT_EQ(libhoth_payload_update_erase(&hoth_dev_, kOffset, kSize),
+            PAYLOAD_UPDATE_IMAGE_NOT_SECTOR_ALIGNED);
+}
+
+TEST_F(LibHothTest, payload_update_erase_cmd_range_overflow_test) {
+  constexpr uint32_t kSectorErase = 4 * 1024;
+  // offset + size slightly exceeding UINT32_MAX
+  constexpr uint32_t kOffset = 0xFFFFF000;
+  constexpr uint32_t kSize = 2 * kSectorErase;
+
+  EXPECT_EQ(libhoth_payload_update_erase(&hoth_dev_, kOffset, kSize),
+            PAYLOAD_UPDATE_INVALID_ARGS);
+}
+
+TEST_F(LibHothTest, payload_update_read_chunk_test) {
+  uint8_t expected_data[] = {0x11, 0x22, 0x33, 0x44, 0x55};
+  size_t offset = 0x100;
+  size_t len = sizeof(expected_data);
+
+  EXPECT_CALL(mock_, send(_, IsReadRequest(offset, len), _))
+      .WillOnce(Return(LIBHOTH_OK));
+  EXPECT_CALL(mock_, receive)
+      .WillOnce(DoAll(CopyResp(expected_data, len), Return(LIBHOTH_OK)));
+
+  std::string temp_path = testing::TempDir() + "libhoth_payload_read_XXXXXX";
+  int fd = mkstemp(&temp_path[0]);
+  ASSERT_GE(fd, 0);
+  unlink(temp_path.c_str());
+  struct FdGuard {
+    int fd;
+    ~FdGuard() { close(fd); }
+  } guard = {fd};
+
+  EXPECT_EQ(libhoth_payload_update_read_chunk(&hoth_dev_, fd, len, offset),
+            PAYLOAD_UPDATE_OK);
+
+  ASSERT_EQ(lseek(fd, 0, SEEK_SET), 0);
+  uint8_t actual_data[sizeof(expected_data)] = {0};
+  ASSERT_EQ(read(fd, actual_data, len), static_cast<ssize_t>(len));
+  EXPECT_THAT(actual_data, ::testing::ElementsAreArray(expected_data));
 }

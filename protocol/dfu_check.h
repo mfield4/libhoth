@@ -18,8 +18,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "protocol/console.h"
 #include "protocol/opentitan_version.h"
+#include "transports/libhoth_device.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,8 +33,7 @@ void libhoth_print_boot_log(
     const struct opentitan_image_version* desired_rom_ext,
     const struct opentitan_image_version* desired_app);
 void libhoth_print_dfu_error(struct libhoth_device* const dev,
-                             struct opentitan_get_version_resp* resp);
-void libhoth_print_erot_console(struct libhoth_device* const dev);
+                             struct opentitan_get_version_resp* resp, int err);
 
 #ifdef __cplusplus
 }

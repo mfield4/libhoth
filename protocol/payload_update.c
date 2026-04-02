@@ -14,6 +14,7 @@
 
 #include "payload_update.h"
 
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -43,27 +44,45 @@ static int send_payload_update_request_with_command(struct libhoth_device* dev,
   return 0;
 }
 
-static int libhoth_payload_update_finalize(
-    struct libhoth_device* dev, uint8_t* pld_needs_reinitialization) {
+static int get_payload_update_version(struct libhoth_device* dev,
+                                      uint8_t* version) {
   uint32_t version_mask = 0;
-  int status = libhoth_get_command_versions(
+  const int status = libhoth_get_command_versions(
       dev, HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_HOTH_PAYLOAD_UPDATE,
       &version_mask);
-  // Command version check in not supported or version 1 is not supported,
-  // default to version 0.
-  if (status == HTOOL_ERROR_HOST_COMMAND_START + HOTH_RES_INVALID_COMMAND ||
-      (status == 0 && (version_mask & 0x2) == 0)) {
+  const bool get_version_unsupported =
+      (status == HTOOL_ERROR_HOST_COMMAND_START + HOTH_RES_INVALID_COMMAND);
+  const bool is_version_0 = (status == 0 && (version_mask & 0x2) == 0);
+  if (get_version_unsupported || is_version_0) {
+    *version = 0;
+    return 0;
+  }
+  if (status != 0) {
+    return status;
+  }
+  *version = 1;
+  return 0;
+}
+
+static int libhoth_payload_update_finalize(
+    struct libhoth_device* dev, uint8_t* pld_needs_reinitialization) {
+  uint8_t version;
+  int status = get_payload_update_version(dev, &version);
+
+  if (status != 0) {
+    fprintf(stderr,
+            "Checking supported command version got unexpected error: %d\n",
+            status);
+    return status;
+  }
+
+  if (version == 0) {
     fprintf(stderr, "Using payload update version 0\n");
     if (pld_needs_reinitialization != NULL) {
       *pld_needs_reinitialization = 0;
     }
     return send_payload_update_request_with_command(dev,
                                                     PAYLOAD_UPDATE_FINALIZE);
-  } else if (status != 0) {
-    fprintf(stderr,
-            "Checking supported command version got unexpected error: %d\n",
-            status);
-    return status;
   }
   fprintf(stderr, "Using payload update version 1\n");
   struct payload_update_packet request = {
@@ -83,8 +102,9 @@ static int libhoth_payload_update_finalize(
   return 0;
 }
 
-static int payload_update_erase(struct libhoth_device* const dev,
-                                const size_t offset, const size_t len) {
+static int payload_update_erase_chunk(struct libhoth_device* const dev,
+                                      const uint32_t offset,
+                                      const uint32_t len) {
   struct payload_update_packet request;
   request.type = PAYLOAD_UPDATE_ERASE;
   request.offset = offset;
@@ -92,6 +112,57 @@ static int payload_update_erase(struct libhoth_device* const dev,
   return libhoth_hostcmd_exec(
       dev, HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_HOTH_PAYLOAD_UPDATE, 0,
       &request, sizeof(request), NULL, 0, NULL);
+}
+
+enum payload_update_err libhoth_payload_update_erase(
+    struct libhoth_device* const dev, const uint32_t offset,
+    const uint32_t len) {
+  struct libhoth_progress_stderr erase_progress;
+  libhoth_progress_stderr_init(&erase_progress, "Erase staging side");
+
+  const size_t block_erase = 64 * 1024;
+  const size_t sector_erase = 4 * 1024;
+
+  if (len == 0 || (len % sector_erase) != 0) {
+    fprintf(stderr,
+            "error: erase length (0x%" PRIx32
+            ") is zero or not sector-aligned.\n",
+            len);
+    return PAYLOAD_UPDATE_IMAGE_NOT_SECTOR_ALIGNED;
+  }
+  if ((offset % sector_erase) != 0) {
+    fprintf(stderr, "error: offset (0x%" PRIx32 ") is not sector-aligned.\n",
+            offset);
+    return PAYLOAD_UPDATE_IMAGE_NOT_SECTOR_ALIGNED;
+  }
+  if (UINT32_MAX - offset < len) {
+    fprintf(stderr,
+            "error: invalid erase range (offset 0x%" PRIx32 ", len 0x%" PRIx32
+            ")\n",
+            offset, len);
+    return PAYLOAD_UPDATE_INVALID_ARGS;
+  }
+
+  uint32_t erased = 0;
+
+  while (erased < len) {
+    erase_progress.progress.func(erase_progress.progress.param, erased, len);
+    const uint32_t current_offset = offset + erased;
+    const uint32_t remaining = len - erased;
+    const bool send_block_erase =
+        (current_offset % block_erase == 0) && (remaining >= block_erase);
+    const uint32_t chunk_size = send_block_erase ? block_erase : sector_erase;
+    const int ret = payload_update_erase_chunk(dev, current_offset, chunk_size);
+    if (ret != 0) {
+      fprintf(stderr, "error: erase chunk offset 0x%" PRIx32 " err: %d\n",
+              current_offset, ret);
+      return PAYLOAD_UPDATE_ERASE_FAIL;
+    }
+    erased += chunk_size;
+  }
+
+  erase_progress.progress.func(erase_progress.progress.param, len, len);
+  return PAYLOAD_UPDATE_OK;
 }
 
 enum payload_update_err libhoth_payload_update(struct libhoth_device* dev,
@@ -103,38 +174,9 @@ enum payload_update_err libhoth_payload_update(struct libhoth_device* dev,
   }
 
   if (!skip_erase) {
-    struct libhoth_progress_stderr erase_progress;
-    libhoth_progress_stderr_init(&erase_progress, "Erase staging side");
-
-    const size_t block_erase = 64 * 1024;
-    const size_t sector_erase = 4 * 1024;
-
-    const bool is_image_size_sector_aligned = ((size % sector_erase) == 0);
-    if (!is_image_size_sector_aligned) {
-      fprintf(stderr, "error: image size (0x%zx) is not sector-aligned.\n",
-              size);
-      return PAYLOAD_UPDATE_IMAGE_NOT_SECTOR_ALIGNED;
-    }
-
-    // Erase by blocks as much as possible.
-    size_t offset = 0;
-    for (; offset + block_erase <= size; offset += block_erase) {
-      const int ret = payload_update_erase(dev, offset, block_erase);
-      if (ret != 0) {
-        fprintf(stderr, "block erase offset 0x%zx err: %d\n", offset, ret);
-        return PAYLOAD_UPDATE_ERASE_FAIL;
-      }
-      erase_progress.progress.func(erase_progress.progress.param, offset, size);
-    }
-
-    // Erase remaining by sectors.
-    for (; offset + sector_erase <= size; offset += sector_erase) {
-      const int ret = payload_update_erase(dev, offset, sector_erase);
-      if (ret != 0) {
-        fprintf(stderr, "sector erase offset 0x%zx err: %d\n", offset, ret);
-        return PAYLOAD_UPDATE_ERASE_FAIL;
-      }
-      erase_progress.progress.func(erase_progress.progress.param, offset, size);
+    enum payload_update_err err = libhoth_payload_update_erase(dev, 0, size);
+    if (err != PAYLOAD_UPDATE_OK) {
+      return err;
     }
   }
 
@@ -184,6 +226,8 @@ enum payload_update_err libhoth_payload_update(struct libhoth_device* dev,
 
     offset += chunk_size - 1;
   }
+
+  program_progress.progress.func(program_progress.progress.param, size, size);
 
   // Don't attempt to verify and activate binary file since most likely it will
   // fail (unlike actual payload images which have an image descriptor)
@@ -268,4 +312,78 @@ enum payload_update_err libhoth_payload_update_read_chunk(
   }
 
   return PAYLOAD_UPDATE_OK;
+}
+
+// Version 0 does not return a response.
+static enum payload_update_err libhoth_payload_update_activate_v0(
+    struct libhoth_device* dev,
+    struct payload_update_activate_request* request) {
+  int status = libhoth_hostcmd_exec(
+      dev, HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_HOTH_PAYLOAD_UPDATE,
+      /*version=*/0, request, sizeof(*request), NULL, 0, NULL);
+  if (status != 0) {
+    fprintf(stderr, "HOTH_PAYLOAD_UPDATE_ACTIVATE v0 error code: %d\n", status);
+    return PAYLOAD_UPDATE_ACTIVATE_FAIL;
+  }
+  return PAYLOAD_UPDATE_OK;
+}
+
+// Version 1 returns a response indicating if the PLD needs to be reinitialized.
+static enum payload_update_err libhoth_payload_update_activate_v1(
+    struct libhoth_device* dev, struct payload_update_activate_request* request,
+    uint8_t* pld_needs_reinitialization) {
+  struct payload_update_activate_response_v1 response = {0};
+  int status = libhoth_hostcmd_exec(
+      dev, HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_HOTH_PAYLOAD_UPDATE,
+      /*version=*/1, request, sizeof(*request), &response, sizeof(response),
+      NULL);
+  if (status != 0) {
+    fprintf(stderr, "HOTH_PAYLOAD_UPDATE_ACTIVATE v1 error code: %d\n", status);
+    return PAYLOAD_UPDATE_ACTIVATE_FAIL;
+  }
+  if (pld_needs_reinitialization != NULL) {
+    *pld_needs_reinitialization = response.pld_needs_reinitialization;
+  }
+  return PAYLOAD_UPDATE_OK;
+}
+
+enum payload_update_err libhoth_payload_update_activate(
+    struct libhoth_device* dev, uint8_t half,
+    uint8_t* pld_needs_reinitialization) {
+  uint8_t version;
+  int status = get_payload_update_version(dev, &version);
+  if (status != 0) {
+    fprintf(stderr,
+            "Checking supported command version got unexpected error: %d\n",
+            status);
+    return PAYLOAD_UPDATE_ACTIVATE_FAIL;
+  }
+
+  struct payload_update_activate_request request = {
+      .header.type = PAYLOAD_UPDATE_ACTIVATE,
+      .header.offset = 0,
+      .header.len = sizeof(struct payload_update_activate),
+      .activate.half = half,
+      .activate.make_persistent = 1,
+  };
+
+  if (version == 0) {
+    fprintf(stderr, "Using payload update version 0\n");
+    if (pld_needs_reinitialization != NULL) {
+      *pld_needs_reinitialization = 0;
+    }
+    return libhoth_payload_update_activate_v0(dev, &request);
+  }
+  fprintf(stderr, "Using payload update version 1\n");
+  return libhoth_payload_update_activate_v1(dev, &request,
+                                            pld_needs_reinitialization);
+}
+
+int libhoth_payload_update_verify(struct libhoth_device* dev) {
+  return send_payload_update_request_with_command(dev, PAYLOAD_UPDATE_VERIFY);
+}
+
+int libhoth_payload_update_verify_descriptor(struct libhoth_device* dev) {
+  return send_payload_update_request_with_command(
+      dev, PAYLOAD_UPDATE_VERIFY_DESCRIPTOR);
 }

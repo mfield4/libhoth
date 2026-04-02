@@ -52,6 +52,7 @@
 #include "htool_srtm.h"
 #include "htool_statistics.h"
 #include "htool_target_control.h"
+#include "htool_tpm.h"
 #include "htool_usb.h"
 #include "protocol/authz_record.h"
 #include "protocol/chipinfo.h"
@@ -966,6 +967,17 @@ static const struct htool_cmd CMDS[] = {
         .func = htool_payload_update_getstatus,
     },
     {
+        .verbs = (const char*[]){"payload", "verify", NULL},
+        .desc = "Verify the staging side.",
+        .params =
+            (const struct htool_param[]){
+                {HTOOL_FLAG_BOOL, 'd', "descriptor", "false",
+                 .desc = "Verify only the image descriptor "
+                         "(PAYLOAD_UPDATE_VERIFY_DESCRIPTOR)."},
+                {}},
+        .func = htool_payload_update_verify,
+    },
+    {
         .verbs = (const char*[]){"payload", "status", NULL},
         .desc = "Show payload status",
         .params = (const struct htool_param[]){{}},
@@ -995,6 +1007,44 @@ static const struct htool_cmd CMDS[] = {
                  .desc = "length of payload read"},
                 {}},
         .func = htool_payload_read,
+    },
+    {
+        .verbs = (const char*[]){"payload", "erase", NULL},
+        .desc = "Erase a range on the staging side.",
+        .params =
+            (const struct htool_param[]){
+                {HTOOL_FLAG_VALUE, .ch = 's', .name = "start",
+                 .desc = "start address of the range to erase"},
+                {HTOOL_FLAG_VALUE, .ch = 'n', .name = "length",
+                 .desc = "length of the range"},
+                {}},
+        .func = htool_payload_erase,
+    },
+    {
+        .verbs = (const char*[]){"payload", "activate", NULL},
+        .desc = "Activate a payload side for next boot.",
+        .params =
+            (const struct htool_param[]){{HTOOL_FLAG_VALUE, 's', "side",
+                                          .desc = "Side to activate (A or B)"},
+                                         {}},
+        .func = htool_payload_activate,
+    },
+    {
+        .verbs = (const char*[]){"payload", "info", "all", NULL},
+        .desc = "Display detailed payload info for a Titan image, "
+                "including region details.",
+        .params =
+            (const struct htool_param[]){
+                {HTOOL_POSITIONAL, .name = "source-file"}, {}},
+        .func = htool_payload_info_all,
+    },
+    {
+        .verbs = (const char*[]){"payload", "info", "nonstatic", NULL},
+        .desc = "Print non-static regions in a Titan image.",
+        .params =
+            (const struct htool_param[]){
+                {HTOOL_POSITIONAL, .name = "source-file"}, {}},
+        .func = htool_payload_info_nonstatic,
     },
     {
         .verbs = (const char*[]){"payload", "info", NULL},
@@ -1757,6 +1807,30 @@ static const struct htool_cmd CMDS[] = {
                          " If the attestation_output flag is provided the "
                          "other output files are not required."},
                 {}},
+    },
+    {
+        .verbs = (const char*[]){"tpm", "get_mode", NULL},
+        .desc = "Get the current TPM mode.",
+        .params = (const struct htool_param[]){{}},
+        .func = htool_get_tpm_mode,
+    },
+    {
+        .verbs = (const char*[]){"tpm", "set_mode", "disabled", NULL},
+        .desc = "Set the TPM mode to DISABLED.",
+        .params = (const struct htool_param[]){{}},
+        .func = htool_set_tpm_mode,
+    },
+    {
+        .verbs = (const char*[]){"tpm", "set_mode", "tpm_spi", NULL},
+        .desc = "Set the TPM mode to TPM_SPI.",
+        .params = (const struct htool_param[]){{}},
+        .func = htool_set_tpm_mode,
+    },
+    {
+        .verbs = (const char*[]){"tpm", "set_mode", "spi_nor_mailbox", NULL},
+        .desc = "Set the TPM mode to SPI_NOR_MAILBOX.",
+        .params = (const struct htool_param[]){{}},
+        .func = htool_set_tpm_mode,
     },
     {},
 };

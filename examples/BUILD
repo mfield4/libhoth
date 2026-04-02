@@ -224,6 +224,8 @@ cc_binary(
         "htool_spi.c",
         "htool_statistics.c",
         "htool_statistics.h",
+        "htool_tpm.c",
+        "htool_tpm.h",
         "htool_target_control.c",
         "htool_target_control.h",
         "htool_update_failure_reasons.h",
@@ -262,6 +264,7 @@ cc_binary(
         "//transports:libhoth_mtd",
         "//transports:libhoth_spi",
         "//transports:libhoth_usb",
+        "//transports:libhoth_usb_device",
         "@libusb",
     ] + select({
         ":dbus_backend": ["//transports:libhoth_dbus"],

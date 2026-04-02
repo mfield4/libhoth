@@ -505,12 +505,11 @@ cc_library(
         "dfu_check.c",
     ],
     hdrs = [
-        "console.h",
         "dfu_check.h",
-        "opentitan_version.h",
     ],
     deps = [
-        ":host_cmd",
+        ":console",
+        ":opentitan_version",
         "//transports:libhoth_device",
     ],
 )

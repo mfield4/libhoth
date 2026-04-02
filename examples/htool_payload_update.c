@@ -207,3 +207,82 @@ int htool_payload_update_getstatus(const struct htool_invocation* inv) {
 
   return 0;
 }
+
+int htool_payload_erase(const struct htool_invocation* inv) {
+  struct libhoth_device* dev = htool_libhoth_device();
+  if (!dev) {
+    return -1;
+  }
+
+  uint32_t start;
+  uint32_t length;
+  if (htool_get_param_u32(inv, "start", &start) ||
+      htool_get_param_u32(inv, "length", &length)) {
+    return -1;
+  }
+  return (libhoth_payload_update_erase(dev, start, length) == PAYLOAD_UPDATE_OK)
+             ? 0
+             : -1;
+}
+
+int htool_payload_activate(const struct htool_invocation* inv) {
+  struct libhoth_device* dev = htool_libhoth_device();
+  if (!dev) {
+    return -1;
+  }
+
+  const char* side_str;
+  if (htool_get_param_string(inv, "side", &side_str)) {
+    return -1;
+  }
+
+  uint8_t half;
+  if (strcasecmp(side_str, "A") == 0) {
+    half = 0;
+  } else if (strcasecmp(side_str, "B") == 0) {
+    half = 1;
+  } else {
+    fprintf(stderr, "Unknown side: %s (expected A or B)\n", side_str);
+    return -1;
+  }
+
+  uint8_t pld_needs_reinitialization = 0;
+  if (libhoth_payload_update_activate(dev, half, &pld_needs_reinitialization) !=
+      PAYLOAD_UPDATE_OK) {
+    fprintf(stderr, "Failed to activate payload.\n");
+    return -1;
+  }
+
+  printf("PLD needs re-initialization?: %d\n", pld_needs_reinitialization);
+  return 0;
+}
+
+int htool_payload_update_verify(const struct htool_invocation* inv) {
+  struct libhoth_device* dev = htool_libhoth_device();
+  if (!dev) {
+    return -1;
+  }
+
+  bool verify_only_descriptor = false;
+  if (htool_get_param_bool(inv, "descriptor", &verify_only_descriptor)) {
+    return -1;
+  }
+  int ret;
+  if (verify_only_descriptor) {
+    ret = libhoth_payload_update_verify_descriptor(dev);
+  } else {
+    fprintf(stderr,
+            "Verifying the payload. This can take up to three minutes...\n");
+    ret = libhoth_payload_update_verify(dev);
+  }
+  if (ret != 0) {
+    fprintf(stderr, "Payload verify failed\n");
+    return -1;
+  }
+  if (verify_only_descriptor) {
+    printf("Payload verify descriptor successful\n");
+  } else {
+    printf("Payload verify successful\n");
+  }
+  return 0;
+}

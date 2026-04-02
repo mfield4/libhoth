@@ -58,6 +58,8 @@ enum payload_update_err {
   PAYLOAD_UPDATE_READ_FAIL,
   PAYLOAD_UPDATE_IMAGE_NOT_SECTOR_ALIGNED,
   PAYLOAD_UPDATE_ERASE_FAIL,
+  PAYLOAD_UPDATE_INVALID_ARGS,
+  PAYLOAD_UPDATE_ACTIVATE_FAIL,
 };
 
 struct payload_update_packet {
@@ -74,6 +76,23 @@ struct payload_update_finalize_response_v1 {
   uint8_t pld_needs_reinitialization;
 } __attribute__((packed));
 
+struct payload_update_activate {
+  uint8_t half;            /* 0, 1 */
+  uint8_t make_persistent; /* 0, 1 */
+} __attribute__((packed));
+
+struct payload_update_activate_request {
+  struct payload_update_packet header;
+  struct payload_update_activate activate;
+} __attribute__((packed));
+
+struct payload_update_activate_response_v1 {
+  // Non-zero if configuration currently running on PLD needs to be
+  // re-initialized (reloaded from internal configuration flash)
+  // Zero otherwise
+  uint8_t pld_needs_reinitialization;
+} __attribute__((packed));
+
 enum payload_update_err libhoth_payload_update(struct libhoth_device* dev,
                                                uint8_t* image, size_t len,
                                                bool skip_erase,
@@ -82,6 +101,14 @@ int libhoth_payload_update_getstatus(
     struct libhoth_device* dev, struct payload_update_status* update_status);
 enum payload_update_err libhoth_payload_update_read_chunk(
     struct libhoth_device* dev, int fd, size_t len, size_t offset);
+enum payload_update_err libhoth_payload_update_erase(struct libhoth_device* dev,
+                                                     uint32_t offset,
+                                                     uint32_t len);
+enum payload_update_err libhoth_payload_update_activate(
+    struct libhoth_device* dev, uint8_t half,
+    uint8_t* pld_needs_reinitialization);
+int libhoth_payload_update_verify(struct libhoth_device* dev);
+int libhoth_payload_update_verify_descriptor(struct libhoth_device* dev);
 
 #ifdef __cplusplus
 }
