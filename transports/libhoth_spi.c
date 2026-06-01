@@ -36,15 +36,7 @@
 #define DID_VID_ADDR 0xD40F00
 
 static uint8_t mode_to_nbits(enum libhoth_spi_mode mode) {
-  switch (mode) {
-    case LIBHOTH_SPI_MODE_DUAL:
-      return 2;
-    case LIBHOTH_SPI_MODE_QUAD:
-      return 4;
-    case LIBHOTH_SPI_MODE_SINGLE:
-    default:
-      return 1;
-  }
+  return 1;
 }
 
 static uint8_t mode_to_read_opcode(enum libhoth_spi_mode mode) {
@@ -60,14 +52,7 @@ static uint8_t mode_to_read_opcode(enum libhoth_spi_mode mode) {
 }
 
 static uint8_t mode_to_write_opcode(enum libhoth_spi_mode mode) {
-  switch (mode) {
-    case LIBHOTH_SPI_MODE_QUAD:
-      return SPI_NOR_OPCODE_QUAD_PAGE_PROGRAM;
-    case LIBHOTH_SPI_MODE_SINGLE:
-    case LIBHOTH_SPI_MODE_DUAL:
-    default:
-      return SPI_NOR_OPCODE_PAGE_PROGRAM;
-  }
+  return SPI_NOR_OPCODE_PAGE_PROGRAM;
 }
 
 static int spi_nor_address(uint8_t* buf, uint32_t address,
@@ -170,6 +155,8 @@ static int spi_nor_write(int fd, bool address_mode_4b,
                          uint32_t device_busy_wait_check_interval) {
   if (fd < 0 || !data || !data_len) return LIBHOTH_ERR_INVALID_PARAMETER;
 
+  fprintf(stderr, "spi_nor_write\n");
+
   // Page program operations
   size_t bytes_sent = 0;
   while (bytes_sent < data_len) {
@@ -226,15 +213,22 @@ static int spi_nor_read(int fd, bool address_mode_4b,
                         void* data, size_t data_len) {
   if (fd < 0 || !data || !data_len) return LIBHOTH_ERR_INVALID_PARAMETER;
 
-  uint8_t rd_request[5] = {0};
+  fprintf(stderr, "spi_nor_read\n");
+
+  uint8_t rd_request[6] = {0};
   struct spi_ioc_transfer xfer[2] = {0};
 
   // Read OPCODE and mailbox address
   rd_request[0] = mode_to_read_opcode(mode);
   int address_len = spi_nor_address(&rd_request[1], address, address_mode_4b);
+  int dummy_len = 0;
+  if (mode != LIBHOTH_SPI_MODE_SINGLE) {
+    rd_request[1 + address_len] = 0x00;
+    dummy_len = 1;
+  }
   xfer[0] = (struct spi_ioc_transfer){
       .tx_buf = (unsigned long)rd_request,
-      .len = 1 + address_len,
+      .len = 1 + address_len + dummy_len,
   };
 
   // Read in data
@@ -371,15 +365,18 @@ int libhoth_spi_open(const struct libhoth_spi_device_init_options* options,
 
   if (options->operation_mode == LIBHOTH_SPI_MODE_QUAD) {
     // Quadmode spi needs to use 32-bit mode flags
-    mode |= (SPI_TX_QUAD | SPI_RX_QUAD);
+    // mode |= (SPI_TX_QUAD | SPI_RX_QUAD);
+    
+    // fprintf(stderr, "set quadmode (FAKE - keeping spidev in 1-bit mode)\n");
 
     if (ioctl(fd, SPI_IOC_WR_MODE32, &mode) < 0) {
       status = LIBHOTH_ERR_FAIL;
+      fprintf(stderr, "Failed to set quadmode\n");
       goto err_out;
     }
   } else if (options->operation_mode == LIBHOTH_SPI_MODE_DUAL) {
     // Dualmode spi needs to use 32-bit mode flags
-    mode |= (SPI_TX_DUAL | SPI_RX_DUAL);
+    // mode |= (SPI_TX_DUAL | SPI_RX_DUAL);
 
     if (ioctl(fd, SPI_IOC_WR_MODE32, &mode) < 0) {
       status = LIBHOTH_ERR_FAIL;
@@ -576,12 +573,17 @@ int libhoth_spi_send_and_receive_response(struct libhoth_device* dev,
   // Wait for status register is handled by the spidev driver.
 
   // Read opcode + Mailbox Address
-  uint8_t rd_buf[5] = {0};
+  uint8_t rd_buf[6] = {0};
   rd_buf[0] = mode_to_read_opcode(spi_dev->mode);
   address_len = spi_nor_address(&rd_buf[1], address, address_mode_4b);
+  int dummy_len = 0;
+  if (spi_dev->mode != LIBHOTH_SPI_MODE_SINGLE) {
+    rd_buf[1 + address_len] = 0x00;
+    dummy_len = 1;
+  }
   xfer[3] = (struct spi_ioc_transfer){
       .tx_buf = (unsigned long)rd_buf,
-      .len = 1 + address_len,
+      .len = 1 + address_len + dummy_len,
   };
 
   // Read entire expected response buffer

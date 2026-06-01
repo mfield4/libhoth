@@ -190,6 +190,12 @@ int libhoth_hostcmd_exec(struct libhoth_device* dev, uint16_t command,
     fprintf(stderr, "libhoth_send_request() failed: %d\n", status);
     return -1;
   }
+
+  fprintf(stderr, "EC request header:\n");
+  hex_dump(stderr, &req.hdr, sizeof(req.hdr));
+  fprintf(stderr, "EC request payload:\n");
+  hex_dump(stderr, req.payload_buf, req_payload_size);
+
   struct {
     struct hoth_host_response hdr;
     uint8_t
@@ -202,6 +208,12 @@ int libhoth_hostcmd_exec(struct libhoth_device* dev, uint16_t command,
     fprintf(stderr, "libhoth_receive_response() failed: %d\n", status);
     return -1;
   }
+
+  fprintf(stderr, "EC response header:\n");
+  hex_dump(stderr, &resp.hdr, sizeof(resp.hdr));
+  fprintf(stderr, "EC response payload:\n");
+  hex_dump(stderr, resp.payload_buf, resp_size);
+
   status = validate_ec_response_header(&resp.hdr, resp.payload_buf, resp_size);
   if (status != 0) {
     fprintf(stderr, "EC response header invalid: %d\n", status);
