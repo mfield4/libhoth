@@ -29,6 +29,7 @@ enum libhoth_spi_mode {
   LIBHOTH_SPI_MODE_SINGLE = 0,
   LIBHOTH_SPI_MODE_DUAL,
   LIBHOTH_SPI_MODE_QUAD,
+  LIBHOTH_SPI_MODE_AUTO,
 };
 
 struct libhoth_spi_device_init_options {

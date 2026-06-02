@@ -35,6 +35,128 @@
 
 #define DID_VID_ADDR 0xD40F00
 
+#define SFDP_SIGNATURE 0x50444653
+#define SFDP_ERR_NOT_SUPPORTED -1
+
+struct sfdp_header {
+  uint32_t signature;
+  uint8_t minor_rev;
+  uint8_t major_rev;
+  uint8_t num_param_headers;  // 0-indexed
+  uint8_t access_protocol;
+} __attribute__((packed));
+
+struct sfdp_parameter_header {
+  uint8_t id_lsb;
+  uint8_t minor_rev;
+  uint8_t major_rev;
+  uint8_t length_dwords;
+  uint8_t table_pointer[3];
+  uint8_t id_msb;
+} __attribute__((packed));
+
+static int spi_nor_read_sfdp(int fd, uint32_t address, void* data, size_t data_len) {
+  if (fd < 0 || !data || !data_len) {
+    return LIBHOTH_ERR_INVALID_PARAMETER;
+  }
+
+  uint8_t rd_request[5] = {0};
+  struct spi_ioc_transfer xfer[2] = {0};
+
+  rd_request[0] = 0x5A;  // Read SFDP standard command
+  rd_request[1] = (address >> 16) & 0xFF;
+  rd_request[2] = (address >> 8) & 0xFF;
+  rd_request[3] = address & 0xFF;
+  rd_request[4] = 0x00;  // 8 dummy cycles
+
+  xfer[0] = (struct spi_ioc_transfer){
+      .tx_buf = (unsigned long)rd_request,
+      .len = sizeof(rd_request),
+  };
+
+  xfer[1] = (struct spi_ioc_transfer){
+      .rx_buf = (unsigned long)data,
+      .len = data_len,
+  };
+
+  int status = ioctl(fd, SPI_IOC_MESSAGE(2), xfer);
+  if (status < 0) {
+    return LIBHOTH_ERR_FAIL;
+  }
+
+  return LIBHOTH_OK;
+}
+
+#define SPI_MODE_SUPPORT_SINGLE (1 << 0)
+#define SPI_MODE_SUPPORT_DUAL   (1 << 1)
+#define SPI_MODE_SUPPORT_QUAD   (1 << 2)
+
+static int detect_spi_mode_from_sfdp(int fd, uint32_t* supported_modes) {
+  struct sfdp_header header;
+  int status = spi_nor_read_sfdp(fd, 0, &header, sizeof(header));
+  if (status != LIBHOTH_OK) {
+    return status;
+  }
+
+  if (header.signature != SFDP_SIGNATURE) {
+    // Invalid signature indicates SFDP is not supported (legacy device)
+    return SFDP_ERR_NOT_SUPPORTED;
+  }
+
+  int num_params = header.num_param_headers + 1;
+  if (num_params > 16) {
+    num_params = 16;  // Cap to prevent stack overflow or large allocations
+  }
+
+  struct sfdp_parameter_header param_headers[16];
+  status = spi_nor_read_sfdp(fd, sizeof(struct sfdp_header), param_headers,
+                             num_params * sizeof(struct sfdp_parameter_header));
+  if (status != LIBHOTH_OK) {
+    return status;
+  }
+
+  // Find the JEDEC Basic Flash Parameter Table (ID = 0xFF00)
+  int bfpt_idx = -1;
+  for (int i = 0; i < num_params; i++) {
+    if (param_headers[i].id_lsb == 0x00 && param_headers[i].id_msb == 0xFF) {
+      bfpt_idx = i;
+      break;
+    }
+  }
+
+  if (bfpt_idx == -1) {
+    // Mandatory table missing
+    return LIBHOTH_ERR_FAIL;
+  }
+
+  uint32_t table_offset = param_headers[bfpt_idx].table_pointer[0] |
+                          (param_headers[bfpt_idx].table_pointer[1] << 8) |
+                          (param_headers[bfpt_idx].table_pointer[2] << 16);
+  uint32_t table_len_bytes = param_headers[bfpt_idx].length_dwords * 4;
+  if (table_len_bytes < 4) {
+    return LIBHOTH_ERR_FAIL;  // Structural error
+  }
+
+  uint32_t dw1 = 0;
+  status = spi_nor_read_sfdp(fd, table_offset, &dw1, sizeof(dw1));
+  if (status != LIBHOTH_OK) {
+    return status;
+  }
+
+  *supported_modes = SPI_MODE_SUPPORT_SINGLE;
+  // JESD216 DWORD 1 bit definitions:
+  // - Bit 12: 1-1-4 Fast Read (Quad Output) supported
+  // - Bit 8: 1-1-2 Fast Read (Dual Output) supported
+  if (dw1 & (1 << 12)) {
+    *supported_modes |= SPI_MODE_SUPPORT_QUAD;
+  }
+  if (dw1 & (1 << 8)) {
+    *supported_modes |= SPI_MODE_SUPPORT_DUAL;
+  }
+
+  return LIBHOTH_OK;
+}
+
 static uint8_t mode_to_nbits(enum libhoth_spi_mode mode) {
   switch (mode) {
     case LIBHOTH_SPI_MODE_DUAL:
@@ -359,50 +481,70 @@ int libhoth_spi_open(const struct libhoth_spi_device_init_options* options,
     }
   }
 
-  uint32_t mode = options->mode;
   if (ioctl(fd, SPI_IOC_RD_MODE32, &spi_dev->original_mode) < 0) {
     status = LIBHOTH_ERR_FAIL;
     goto err_out;
   }
 
-  // TODO(michaelfield): Readback the SFDP and check that quadmode is
-  // supported. If not, then we should fail unless the user explicitly
-  // requested to force quadmode.
+  uint32_t supported_modes = SPI_MODE_SUPPORT_SINGLE;
+  bool is_auto = (options->operation_mode == LIBHOTH_SPI_MODE_AUTO);
 
+  if (is_auto) {
+    status = detect_spi_mode_from_sfdp(fd, &supported_modes);
+    if (status != LIBHOTH_OK && status != SFDP_ERR_NOT_SUPPORTED) {
+      // Bubble up any parsing/comms errors as requested
+      goto err_out;
+    }
+  }
+
+  enum libhoth_spi_mode active_mode;
   if (options->operation_mode == LIBHOTH_SPI_MODE_QUAD) {
-    // Quadmode spi needs to use 32-bit mode flags
-    mode |= (SPI_TX_QUAD | SPI_RX_QUAD);
-
-    if (ioctl(fd, SPI_IOC_WR_MODE32, &mode) < 0) {
-      status = LIBHOTH_ERR_FAIL;
-      goto err_out;
-    }
+    active_mode = LIBHOTH_SPI_MODE_QUAD;
   } else if (options->operation_mode == LIBHOTH_SPI_MODE_DUAL) {
-    // Dualmode spi needs to use 32-bit mode flags
-    mode |= (SPI_TX_DUAL | SPI_RX_DUAL);
-
-    if (ioctl(fd, SPI_IOC_WR_MODE32, &mode) < 0) {
-      status = LIBHOTH_ERR_FAIL;
-      goto err_out;
-    }
+    active_mode = LIBHOTH_SPI_MODE_DUAL;
+  } else if (options->operation_mode == LIBHOTH_SPI_MODE_SINGLE) {
+    active_mode = LIBHOTH_SPI_MODE_SINGLE;
   } else {
-    // Set the mode anyways.
-    // There is a failure mode wherein a bad mode setting will stick.
-    // Even if mode is zero, we still want to write it.
-    if (ioctl(fd, SPI_IOC_WR_MODE32, &mode) < 0) {
-      status = LIBHOTH_ERR_FAIL;
-      goto err_out;
+    // Auto mode: start with highest mode reported by SFDP
+    if (supported_modes & SPI_MODE_SUPPORT_QUAD) {
+      active_mode = LIBHOTH_SPI_MODE_QUAD;
+    } else if (supported_modes & SPI_MODE_SUPPORT_DUAL) {
+      active_mode = LIBHOTH_SPI_MODE_DUAL;
+    } else {
+      active_mode = LIBHOTH_SPI_MODE_SINGLE;
     }
   }
 
-  // read back the mode, and verify that it is what we expect.
-  uint32_t read_mode;
-  if (ioctl(fd, SPI_IOC_RD_MODE32, &read_mode) < 0) {
-    status = LIBHOTH_ERR_FAIL;
-    goto err_out;
-  }
+  while (1) {
+    uint32_t mode = options->mode;
+    if (active_mode == LIBHOTH_SPI_MODE_QUAD) {
+      mode |= (SPI_TX_QUAD | SPI_RX_QUAD);
+    } else if (active_mode == LIBHOTH_SPI_MODE_DUAL) {
+      mode |= (SPI_TX_DUAL | SPI_RX_DUAL);
+    }
 
-  if (read_mode != mode) {
+    if (ioctl(fd, SPI_IOC_WR_MODE32, &mode) >= 0) {
+      uint32_t read_mode = 0;
+      if (ioctl(fd, SPI_IOC_RD_MODE32, &read_mode) >= 0 && read_mode == mode) {
+        spi_dev->mode = active_mode;
+        break; // Successfully configured!
+      }
+    }
+
+    if (is_auto) {
+      if (active_mode == LIBHOTH_SPI_MODE_QUAD) {
+        if (supported_modes & SPI_MODE_SUPPORT_DUAL) {
+          active_mode = LIBHOTH_SPI_MODE_DUAL;
+        } else {
+          active_mode = LIBHOTH_SPI_MODE_SINGLE;
+        }
+        continue;
+      } else if (active_mode == LIBHOTH_SPI_MODE_DUAL) {
+        active_mode = LIBHOTH_SPI_MODE_SINGLE;
+        continue;
+      }
+    }
+
     status = LIBHOTH_ERR_FAIL;
     goto err_out;
   }

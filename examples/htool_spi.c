@@ -63,6 +63,8 @@ struct libhoth_device* htool_libhoth_spi_device(void) {
     operation_mode = LIBHOTH_SPI_MODE_DUAL;
   } else if (!strcmp(mode_str, "quad")) {
     operation_mode = LIBHOTH_SPI_MODE_QUAD;
+  } else if (!strcmp(mode_str, "auto")) {
+    operation_mode = LIBHOTH_SPI_MODE_AUTO;
   } else {
     fprintf(stderr, "Invalid spidev mode: %s\n", mode_str);
     return NULL;
