@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 
 #include "protocol/host_cmd.h"
 #include "test/libhoth_device_mock.h"
@@ -577,4 +578,122 @@ TEST_F(LibHothTest, key_rotation_get_mauv_failure_invalid_response_size) {
   struct hoth_response_key_rotation_mauv actual_response;
   EXPECT_EQ(libhoth_key_rotation_get_mauv(&hoth_dev_, &actual_response),
             KEY_ROTATION_ERR_INVALID_RESPONSE_SIZE);
+}
+
+TEST_F(LibHothTest, write_commit_sends_whole_record_in_one_command) {
+  std::vector<uint8_t> record(4096);
+  for (size_t i = 0; i < record.size(); i++) {
+    record[i] = static_cast<uint8_t>(i * 7);
+  }
+
+  struct hoth_request_key_rotation_record hdr = {};
+  std::vector<uint8_t> sent_record;
+  EXPECT_CALL(mock_, send(_, UsesCommand(kCmd), _))
+      .Times(1)
+      .WillOnce([&](struct libhoth_device*, const void* request,
+                    size_t request_size) {
+        const uint8_t* payload = static_cast<const uint8_t*>(request) +
+                                 sizeof(struct hoth_host_request);
+        const size_t payload_size =
+            request_size - sizeof(struct hoth_host_request);
+        std::memcpy(&hdr, payload, sizeof(hdr));
+        sent_record.assign(payload + sizeof(hdr), payload + payload_size);
+        return LIBHOTH_OK;
+      });
+  EXPECT_CALL(mock_, receive)
+      .Times(1)
+      .WillOnce(DoAll(CopyResp(record.data(), 0), Return(LIBHOTH_OK)));
+
+  EXPECT_EQ(libhoth_key_rotation_write_commit(&hoth_dev_, record.data(),
+                                              record.size()),
+            KEY_ROTATION_CMD_SUCCESS);
+
+  EXPECT_EQ(hdr.operation, KEY_ROTATION_RECORD_WRITE_COMMIT);
+  EXPECT_EQ(hdr.packet_offset, 0);
+  EXPECT_EQ(hdr.packet_size, record.size());
+  EXPECT_EQ(sent_record, record);
+}
+
+TEST_F(LibHothTest, write_commit_accepts_record_at_max_capacity) {
+  std::vector<uint8_t> record(KEY_ROTATION_RECORD_WRITE_COMMIT_MAX_SIZE, 0xa5);
+
+  EXPECT_CALL(mock_, send(_, UsesCommand(kCmd), _))
+      .WillOnce(Return(LIBHOTH_OK));
+  EXPECT_CALL(mock_, receive)
+      .WillOnce(DoAll(CopyResp(record.data(), 0), Return(LIBHOTH_OK)));
+
+  EXPECT_EQ(libhoth_key_rotation_write_commit(&hoth_dev_, record.data(),
+                                              record.size()),
+            KEY_ROTATION_CMD_SUCCESS);
+}
+
+TEST_F(LibHothTest, write_commit_rejects_record_above_max_capacity) {
+  EXPECT_CALL(mock_, send).Times(0);
+
+  std::vector<uint8_t> record(KEY_ROTATION_RECORD_WRITE_COMMIT_MAX_SIZE + 1, 0);
+  EXPECT_EQ(libhoth_key_rotation_write_commit(&hoth_dev_, record.data(),
+                                              record.size()),
+            KEY_ROTATION_ERR_INVALID_PARAM);
+}
+
+TEST_F(LibHothTest, write_commit_rejects_invalid_params) {
+  EXPECT_CALL(mock_, send).Times(0);
+
+  const uint8_t record[8] = {0};
+  EXPECT_EQ(
+      libhoth_key_rotation_write_commit(&hoth_dev_, nullptr, sizeof(record)),
+      KEY_ROTATION_ERR_INVALID_PARAM);
+  EXPECT_EQ(libhoth_key_rotation_write_commit(&hoth_dev_, record, 0),
+            KEY_ROTATION_ERR_INVALID_PARAM);
+}
+
+TEST_F(LibHothTest, write_commit_rejects_unexpected_response_payload) {
+  const uint8_t record[8] = {0};
+  const uint32_t unexpected = 0xdeadbeef;
+
+  EXPECT_CALL(mock_, send(_, UsesCommand(kCmd), _))
+      .WillOnce(Return(LIBHOTH_OK));
+  EXPECT_CALL(mock_, receive)
+      .WillOnce(
+          DoAll(CopyResp(&unexpected, sizeof(unexpected)), Return(LIBHOTH_OK)));
+
+  EXPECT_EQ(
+      libhoth_key_rotation_write_commit(&hoth_dev_, record, sizeof(record)),
+      KEY_ROTATION_COMMIT_FAIL);
+}
+
+TEST_F(LibHothTest, write_commit_reports_device_failure) {
+  const uint8_t record[8] = {0};
+
+  EXPECT_CALL(mock_, send(_, UsesCommand(kCmd), _))
+      .WillOnce(Return(LIBHOTH_ERR_CONSTRUCT(
+          HOTH_CTX_CMD_EXEC, HOTH_HOST_SPACE_LIBHOTH, LIBHOTH_ERR_FAIL)));
+
+  EXPECT_EQ(
+      libhoth_key_rotation_write_commit(&hoth_dev_, record, sizeof(record)),
+      KEY_ROTATION_COMMIT_FAIL);
+}
+
+TEST_F(LibHothTest, update_dispatches_to_write_commit_on_krsd_magic) {
+  std::vector<uint8_t> record(4064, 0x11);
+  std::memcpy(record.data(), KEY_ROTATION_SIGNED_RECORD_MAGIC, 4);
+
+  struct hoth_request_key_rotation_record hdr = {};
+  EXPECT_CALL(mock_, send(_, UsesCommand(kCmd), _))
+      .Times(1)
+      .WillOnce([&](struct libhoth_device*, const void* request, size_t) {
+        const uint8_t* payload = static_cast<const uint8_t*>(request) +
+                                 sizeof(struct hoth_host_request);
+        std::memcpy(&hdr, payload, sizeof(hdr));
+        return LIBHOTH_OK;
+      });
+  EXPECT_CALL(mock_, receive)
+      .Times(1)
+      .WillOnce(DoAll(CopyResp(record.data(), 0), Return(LIBHOTH_OK)));
+
+  EXPECT_EQ(
+      libhoth_key_rotation_update(&hoth_dev_, record.data(), record.size()),
+      KEY_ROTATION_CMD_SUCCESS);
+  EXPECT_EQ(hdr.operation, KEY_ROTATION_RECORD_WRITE_COMMIT);
+  EXPECT_EQ(hdr.packet_size, record.size());
 }

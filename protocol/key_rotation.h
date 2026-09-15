@@ -34,6 +34,10 @@ extern "C" {
 #define KEY_ROTATION_RECORD_WRITE_MAX_SIZE                   \
   (LIBHOTH_MAILBOX_SIZE - sizeof(struct hoth_host_request) - \
    sizeof(struct hoth_request_key_rotation_record))
+#define KEY_ROTATION_RECORD_WRITE_COMMIT_MAX_SIZE                \
+  (LIBHOTH_MAX_MAILBOX_SIZE - sizeof(struct hoth_host_request) - \
+   sizeof(struct hoth_request_key_rotation_record))
+#define KEY_ROTATION_SIGNED_RECORD_MAGIC "KRSD"
 #define KEY_ROTATION_RECORD_READ_MAX_SIZE                     \
   (LIBHOTH_MAILBOX_SIZE - sizeof(struct hoth_host_response) - \
    sizeof(struct hoth_request_key_rotation_record) -          \
@@ -87,6 +91,8 @@ enum key_rotation_record_op {
                                          // allows
   KEY_ROTATION_RECORD_SET_MAUV = 10,     // Set Key Rotation Record MAUV
   KEY_ROTATION_RECORD_GET_MAUV = 11,     // Get Key Rotation Record MAUV
+  KEY_ROTATION_RECORD_WRITE_COMMIT = 12,  // Write, validate and commit a whole
+                                          // record. Earlgrey only.
 };
 
 #define KEY_ROTATION_CHUNK_TYPE_CODE_PKEY (0x59454B50)
@@ -185,6 +191,11 @@ enum key_rotation_err libhoth_key_rotation_payload_status(
 enum key_rotation_err libhoth_key_rotation_update(struct libhoth_device* dev,
                                                   const uint8_t* image,
                                                   size_t size);
+// Installs a key rotation record on Earlgrey targets, which validate, seal and
+// commit it from a single request. `record` must be the complete signed record
+// and must fit in one mailbox transfer.
+enum key_rotation_err libhoth_key_rotation_write_commit(
+    struct libhoth_device* dev, const uint8_t* record, size_t size);
 enum key_rotation_err libhoth_key_rotation_read(
     struct libhoth_device* dev, uint16_t offset, uint16_t size,
     uint32_t read_half,

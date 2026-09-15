@@ -152,6 +152,10 @@ enum key_rotation_err libhoth_key_rotation_payload_status(
 enum key_rotation_err libhoth_key_rotation_update(struct libhoth_device* dev,
                                                   const uint8_t* image,
                                                   size_t size) {
+  if (image != NULL && size >= 4 &&
+      memcmp(image, KEY_ROTATION_SIGNED_RECORD_MAGIC, 4) == 0) {
+    return libhoth_key_rotation_write_commit(dev, image, size);
+  }
   if (size <= KEY_ROTATION_RECORD_SIGNATURE_SIZE) {
     fprintf(stderr, "Data chunk size invalid.\n");
     return KEY_ROTATION_ERR_INVALID_PARAM;
@@ -200,6 +204,43 @@ enum key_rotation_err libhoth_key_rotation_update(struct libhoth_device* dev,
   if (send_key_rotation_request(dev, KEY_ROTATION_RECORD_COMMIT) !=
       KEY_ROTATION_CMD_SUCCESS) {
     fprintf(stderr, "Failed to commit key rotation.\n");
+    return KEY_ROTATION_COMMIT_FAIL;
+  }
+  return KEY_ROTATION_CMD_SUCCESS;
+}
+
+enum key_rotation_err libhoth_key_rotation_write_commit(
+    struct libhoth_device* dev, const uint8_t* record, size_t size) {
+  if (dev == NULL || record == NULL || size == 0) {
+    return KEY_ROTATION_ERR_INVALID_PARAM;
+  }
+  if (size > KEY_ROTATION_RECORD_WRITE_COMMIT_MAX_SIZE) {
+    fprintf(stderr,
+            "Key rotation record of %zu bytes exceeds the %zu bytes maximum.\n",
+            size, (size_t)KEY_ROTATION_RECORD_WRITE_COMMIT_MAX_SIZE);
+    return KEY_ROTATION_ERR_INVALID_PARAM;
+  }
+
+  struct {
+    struct hoth_request_key_rotation_record hdr;
+    uint8_t data[KEY_ROTATION_RECORD_WRITE_COMMIT_MAX_SIZE];
+  } request;
+
+  request.hdr.operation = KEY_ROTATION_RECORD_WRITE_COMMIT;
+  request.hdr.packet_offset = 0;
+  request.hdr.packet_size = (uint16_t)size;
+  request.hdr.reserved = 0;
+  memcpy(request.data, record, size);
+
+  fprintf(stderr, "Writing and committing the key rotation record.\n");
+  // A zero-length response buffer makes the exec layer require an empty
+  // response, so no separate size check is needed.
+  libhoth_error err = libhoth_hostcmd_exec_v2(
+      dev, HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_HAVEN_KEY_ROTATION_OP, 0,
+      &request, sizeof(request.hdr) + size, NULL, 0, NULL);
+  if (err != HOTH_SUCCESS) {
+    fprintf(stderr, "HOTH_KEY_ROTATION_WRITE_COMMIT error code: 0x%016llx\n",
+            (unsigned long long)err);
     return KEY_ROTATION_COMMIT_FAIL;
   }
   return KEY_ROTATION_CMD_SUCCESS;
