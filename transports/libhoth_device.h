@@ -24,7 +24,11 @@
 extern "C" {
 #endif
 
+// Legacy host command buffer size used for Haven/Dauntless protocol chunking.
 #define LIBHOTH_MAILBOX_SIZE 1024
+// Maximum host command buffer size supported by any target (OpenTitan
+// Earlgrey). Mirrors the firmware's MIN_HOST_COMMAND_BUFFER_SIZE.
+#define LIBHOTH_MAX_MAILBOX_SIZE 6144
 #define LIBHOTH_REBOOT_DELAY_MS 1000
 
 struct libhoth_device {

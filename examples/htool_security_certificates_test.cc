@@ -126,7 +126,7 @@ class HtoolSecurityCertificatesTest : public ::testing::Test {
   HtoolInvocationMock invocation_mock_;
   HtoolSecurityV2Mock security_v2_mock_;
   std::string tmp_dir_path_;
-  struct libhoth_device dummy_dev;
+  struct libhoth_device dummy_dev{};
 };
 
 TEST_F(HtoolSecurityCertificatesTest, GetAttestationPubCertSuccess) {

@@ -207,12 +207,23 @@ libhoth_error libhoth_hostcmd_exec_v2(struct libhoth_device* dev,
                                       size_t* out_resp_size) {
   struct {
     struct hoth_host_request hdr;
-    uint8_t
-        payload_buf[LIBHOTH_MAILBOX_SIZE - sizeof(struct hoth_host_request)];
+    uint8_t payload_buf[LIBHOTH_MAX_MAILBOX_SIZE -
+                        sizeof(struct hoth_host_request)];
   } req;
   if (req_payload_size > sizeof(req.payload_buf)) {
-    fprintf(stderr, "req_payload_size too large: %d > %d\n",
-            (int)req_payload_size, (int)sizeof(req.payload_buf));
+    fprintf(stderr, "req_payload_size too large: %zu > %zu\n", req_payload_size,
+            sizeof(req.payload_buf));
+    return LIBHOTH_ERR_CONSTRUCT(HOTH_CTX_CMD_EXEC, HOTH_HOST_SPACE_LIBHOTH,
+                                 LIBHOTH_ERR_OUT_UNDERFLOW);
+  }
+  struct {
+    struct hoth_host_response hdr;
+    uint8_t payload_buf[LIBHOTH_MAX_MAILBOX_SIZE -
+                        sizeof(struct hoth_host_response)];
+  } resp;
+  if (resp_buf_size > sizeof(resp.payload_buf)) {
+    fprintf(stderr, "resp_buf_size too large: %zu > %zu\n", resp_buf_size,
+            sizeof(resp.payload_buf));
     return LIBHOTH_ERR_CONSTRUCT(HOTH_CTX_CMD_EXEC, HOTH_HOST_SPACE_LIBHOTH,
                                  LIBHOTH_ERR_OUT_UNDERFLOW);
   }
@@ -233,13 +244,12 @@ libhoth_error libhoth_hostcmd_exec_v2(struct libhoth_device* dev,
             (unsigned long long)err);
     return err;
   }
-  struct {
-    struct hoth_host_response hdr;
-    uint8_t
-        payload_buf[LIBHOTH_MAILBOX_SIZE - sizeof(struct hoth_host_response)];
-  } resp;
+  size_t max_resp_size = sizeof(struct hoth_host_response) + resp_buf_size;
+  if (max_resp_size < LIBHOTH_MAILBOX_SIZE) {
+    max_resp_size = LIBHOTH_MAILBOX_SIZE;
+  }
   size_t resp_size = 0;
-  err = libhoth_receive_response(dev, &resp, sizeof(resp), &resp_size,
+  err = libhoth_receive_response(dev, &resp, max_resp_size, &resp_size,
                                  HOTH_CMD_TIMEOUT_MS_DEFAULT);
   if (err != HOTH_SUCCESS) {
     fprintf(stderr, "libhoth_receive_response() failed: 0x%016llx\n",

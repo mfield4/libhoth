@@ -19,7 +19,7 @@ static libhoth_error reconnect(struct libhoth_device* dev) {
   return mock->reconnect(dev);
 }
 
-LibHothTest::LibHothTest() {
+LibHothTest::LibHothTest() : hoth_dev_{} {
   hoth_dev_.user_ctx = &mock_;
   hoth_dev_.send = send;
   hoth_dev_.receive = receive;
