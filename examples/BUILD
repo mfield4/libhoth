@@ -162,6 +162,13 @@ cc_test(
     ],
 )
 
+config_setting(
+    name = "static_build",
+    define_values = {
+        "static": "true",
+    },
+)
+
 cc_binary(
     name = "htool",
     srcs = [
@@ -234,7 +241,19 @@ cc_binary(
         "htool_usb.c",
         "htool_usb.h",
     ],
-    features = ["fully_static_link_target"],
+    features = select({
+        ":static_build": [
+            "fully_static_link",
+            "fully_static_link_target",
+        ],
+        "//conditions:default": [
+            "fully_static_link_target",
+        ],
+    }),
+    linkopts = select({
+        ":static_build": ["-static"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":host_commands",
         ":srtm",
