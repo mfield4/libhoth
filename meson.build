@@ -29,4 +29,4 @@ pkg.generate(
 )
 
 subdir('tools/common')
-subdir('examples')
+subdir('tools/htool')
