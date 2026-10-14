@@ -38,24 +38,30 @@ static int matches_verbs(const char* const* verbs, int argc,
   }
 }
 
+// Returns the command whose verbs (or alias) match the most leading words of
+// argv. On a tie, the first entry in table order wins. This makes dispatch
+// independent of table order, so e.g. "payload info foo" appended after the
+// default "payload info" is still reachable.
 static const struct htool_cmd* find_command(const struct htool_cmd* cmds,
                                             int argc, const char* const* argv,
                                             int* num_verb_words) {
+  const struct htool_cmd* best = NULL;
+  int best_consume = 0;
   for (int i = 0; cmds[i].verbs; i++) {
     int consume = matches_verbs(cmds[i].verbs, argc, argv);
-    if (consume) {
-      *num_verb_words = consume;
-      return &cmds[i];
-    }
     if (cmds[i].alias) {
-      consume = matches_verbs(cmds[i].alias, argc, argv);
-      if (consume) {
-        *num_verb_words = consume;
-        return &cmds[i];
+      int alias_consume = matches_verbs(cmds[i].alias, argc, argv);
+      if (alias_consume > consume) {
+        consume = alias_consume;
       }
     }
+    if (consume > best_consume) {
+      best = &cmds[i];
+      best_consume = consume;
+    }
   }
-  return NULL;
+  *num_verb_words = best_consume;
+  return best;
 }
 
 static void print_flags(const struct htool_param* params) {
