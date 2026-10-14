@@ -29,7 +29,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "git_version.h"
 #include "host_commands.h"
 #include "htool_authz_command.h"
 #include "htool_console.h"
@@ -75,15 +74,6 @@
 #include "tools/common/htool_cmd.h"
 #include "transports/libhoth_device.h"
 #include "transports/libhoth_spi.h"
-
-void htool_report_error(const char* cmd_name, libhoth_error err) {
-  if (err == HOTH_SUCCESS) {
-    return;
-  }
-
-  fprintf(stderr, "Error: '%s' failed (0x%016lX): ", cmd_name, err);
-  libhoth_log_err(stderr, err);
-}
 
 static int command_usb_list(const struct htool_invocation* inv) {
   return htool_usb_print_devices();
@@ -681,38 +671,6 @@ static int command_srtm(const struct htool_invocation* inv) {
       /*version=*/0, &request, sizeof(request), NULL, 0, NULL);
 }
 
-struct libhoth_device* htool_libhoth_device(void) {
-  static struct libhoth_device* result;
-  if (result) {
-    return result;
-  }
-
-  int rv;
-  const char* transport_method_str;
-  rv = htool_get_param_string(htool_global_flags(), "transport",
-                              &transport_method_str);
-  if (rv) {
-    return NULL;
-  }
-
-  if (strlen(transport_method_str) <= 0 ||
-      (strcmp(transport_method_str, "usb") == 0)) {
-    result = htool_libhoth_usb_device();
-  } else if (strcmp(transport_method_str, "spidev") == 0) {
-    result = htool_libhoth_spi_device();
-  } else if (strcmp(transport_method_str, "mtd") == 0) {
-    result = htool_libhoth_mtd_device();
-  } else if (strcmp(transport_method_str, "dbus") == 0) {
-    result = htool_libhoth_dbus_device();
-  } else {
-    fprintf(stderr, "Unknown transport protocol %s\n\r\n",
-            transport_method_str);
-    return NULL;
-  }
-
-  return result;
-}
-
 int htool_tpm_spi_probe(const struct htool_invocation* inv) {
   struct libhoth_device* dev = htool_libhoth_spi_device();
   if (!dev) {
@@ -1057,7 +1015,7 @@ cleanup:
   return rv;
 }
 
-static const struct htool_cmd CMDS[] = {
+const struct htool_cmd htool_default_cmds[] = {
     {
         .verbs = (const char*[]){"usb", "list", NULL},
         .desc = "List all RoTs connected via USB.",
@@ -2368,54 +2326,3 @@ static const struct htool_cmd CMDS[] = {
     },
     {},
 };
-
-static const struct htool_param GLOBAL_FLAGS[] = {
-    {HTOOL_FLAG_VALUE, .name = "transport", .default_value = "",
-     .desc = "The method of connecting to the RoT; for example "
-             "'spidev'/'usb'/'mtd'/'dbus'"},
-    {HTOOL_FLAG_VALUE, .name = "usb_loc", .default_value = "",
-     .desc = "The full bus-portlist location of the RoT; for example "
-             "'1-10.4.4.1'."},
-    {HTOOL_FLAG_VALUE, .name = "usb_product", .default_value = "",
-     .desc = "If there is a single USB RoT with this substring in the USB "
-             "product string, use it."},
-    {HTOOL_FLAG_VALUE, .name = "spidev_path", .default_value = "",
-     .desc = "The full SPIDEV path of the RoT; for example "
-             "'/dev/spidev0.0'."},
-    {HTOOL_FLAG_BOOL, .name = "spidev_atomic", .default_value = "false",
-     .desc = "If true, force spidev to send the request and receive the "
-             "corresponding response with a single atomic ioctl.  This is "
-             "required on some systems for correctness."},
-    {HTOOL_FLAG_VALUE, .name = "spidev_speed_hz", .default_value = "0",
-     .desc = "Clock speed (in Hz) to use when using spidev transport. Default "
-             "behavior (with input 0) is to not change the clock speed"},
-    {HTOOL_FLAG_VALUE, .name = "spidev_device_busy_wait_timeout",
-     .default_value = "180000000",
-     .desc = "Maximum duration (in microseconds) to wait when SPI device "
-             "indicates that it is busy"},
-    {HTOOL_FLAG_VALUE, .name = "spidev_device_busy_wait_check_interval",
-     .default_value = "100",
-     .desc = "Interval duration (in microseconds) to wait before checking SPI "
-             "device status again when it indicates that the device is busy"},
-    {HTOOL_FLAG_VALUE, .name = "mtddev_path", .default_value = "",
-     .desc = "The full MTD path of the RoT mailbox; for example "
-             "'/dev/mtd0'. If unspecified, will attempt to detect "
-             "the correct device automatically"},
-    {HTOOL_FLAG_VALUE, .name = "mtddev_name", .default_value = "hoth-mailbox",
-     .desc = "The MTD name of the RoT mailbox; for example 'hoth-mailbox'. "},
-    {HTOOL_FLAG_VALUE, .name = "mailbox_location", .default_value = "0",
-     .desc = "The location of the mailbox on the RoT, for 'spidev' "
-             "or 'mtd' transports; for example '0x900000'."},
-    {HTOOL_FLAG_VALUE, .name = "dbus_hoth_id", .default_value = "",
-     .desc = "The hoth ID associated with the RoT's hothd service."},
-    {HTOOL_FLAG_VALUE, .name = "connect_timeout", .default_value = "10s",
-     .desc =
-         "Maximum duration to retry opening a busy libhoth transport (e.g., "
-         "'1s', '1500ms')."},
-    {HTOOL_FLAG_BOOL, .name = "version", .default_value = "false",
-     .desc = "Print htool version."},
-    {}};
-
-int main(int argc, const char* const* argv) {
-  return htool_main(GLOBAL_FLAGS, CMDS, STABLE_GIT_COMMIT, argc - 1, &argv[1]);
-}

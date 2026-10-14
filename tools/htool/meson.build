@@ -15,8 +15,10 @@ if get_option('dbus_backend')
     c_args += '-DDBUS_BACKEND'
 endif
 
-executable(
-    'htool',
+# Everything in htool except main(). Link this from a custom main.c to add
+# commands and transports via htool_run(); see htool.h.
+htool_lib = static_library(
+    'htool_lib',
     sources: [
         'htool.c',
         'htool_authz_command.c',
@@ -37,6 +39,7 @@ executable(
         'htool_payload_update.c',
         'htool_raw_host_command.c',
         'htool_rot_usb.c',
+        'htool_run.c',
         'htool_spi.c',
         'htool_statistics.c',
         'htool_target_control.c',
@@ -66,12 +69,18 @@ executable(
         'htool_tpm.c',
         'htool_update_session.h',
         'htool_update_session.c',
-        git_version_h,
     ],
     dependencies: [libusb],
     link_with: link_with,
     include_directories: incdir,
     c_args: c_args,
+)
+
+executable(
+    'htool',
+    sources: ['main.c', git_version_h],
+    link_with: [htool_lib],
+    include_directories: incdir,
     install: true,
 )
 
