@@ -284,6 +284,17 @@ cc_binary(
 )
 
 cc_test(
+    name = "htool_run_test",
+    srcs = ["htool_run_test.cc"],
+    deps = [
+        ":htool_lib",
+        "//tools/common:htool_cmd",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
+)
+
+cc_test(
     name = "htool_provisioning_test",
     srcs = ["htool_provisioning_test.cc"],
     deps = [

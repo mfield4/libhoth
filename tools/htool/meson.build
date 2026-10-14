@@ -90,6 +90,17 @@ gmock_dep = dependency('gmock', main: false, disabler: true, required: get_optio
 
 if gtest_dep.found() and gmock_dep.found()
     test(
+        'htool_run_test',
+        executable(
+            'htool_run_test_exe',
+            sources: ['htool_run_test.cc'],
+            include_directories: incdir,
+            link_with: [htool_lib],
+            dependencies: [gtest_dep, gmock_dep],
+        ),
+    )
+
+    test(
         'htool_provisioning_test_asan',
         executable(
             'htool_provisioning_test_asan_exe',
