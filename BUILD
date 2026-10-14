@@ -1,10 +1,18 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
 
 package(default_visibility = ["//visibility:public"])
 
+refresh_compile_commands(
+    name = "refresh_compile_commands",
+    targets = {
+        "//" + "...": "",
+    },
+)
+
 exports_files([
-    "external/libusb.BUILD",
-    "external/libusb.patch",
+    "third_party/libusb.BUILD",
+    "third_party/libusb.patch",
 ])
 
 cc_library(
