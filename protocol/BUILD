@@ -570,7 +570,6 @@ cc_test(
     ],
 )
 
-
 cc_library(
     name = "dfu_hostcmd",
     srcs = ["dfu_hostcmd.c"],
@@ -704,4 +703,40 @@ cc_library(
         ":libhoth_status",
         "//transports:libhoth_device",
     ],
+)
+
+cc_library(
+    name = "authz_command",
+    hdrs = ["authz_command.h"],
+)
+
+cc_library(
+    name = "security_v2",
+    hdrs = ["security_v2.h"],
+    deps = [
+        ":host_cmd",
+    ],
+)
+
+cc_library(
+    name = "spi_passthrough",
+    hdrs = ["spi_passthrough.h"],
+    deps = [
+        ":host_cmd",
+    ],
+)
+
+cc_library(
+    name = "srtm",
+    hdrs = ["srtm.h"],
+)
+
+cc_library(
+    name = "target_control",
+    hdrs = ["target_control.h"],
+)
+
+cc_library(
+    name = "target_reset",
+    hdrs = ["target_reset.h"],
 )

@@ -13,8 +13,14 @@ cc_library(
         "host_commands.h",
     ],
     deps = [
+        "//protocol:authz_command",
         "//protocol:console",
         "//protocol:host_cmd",
+        "//protocol:security_v2",
+        "//protocol:spi_passthrough",
+        "//protocol:srtm",
+        "//protocol:target_control",
+        "//protocol:target_reset",
     ],
 )
 
