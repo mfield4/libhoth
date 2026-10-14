@@ -18,7 +18,7 @@
 #include <string>
 
 #include "htool.h"
-#include "htool_cmd.h"
+#include "tools/common/htool_cmd.h"
 
 namespace {
 

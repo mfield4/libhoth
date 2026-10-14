@@ -18,9 +18,9 @@
 #include <string.h>
 
 #include "htool.h"
-#include "htool_cmd.h"
-#include "htool_macros.h"
 #include "protocol/status.h"
+#include "tools/common/htool_cmd.h"
+#include "tools/common/macros.h"
 
 static const struct htool_param kCoreGlobalFlags[] = {
     {HTOOL_FLAG_VALUE, .name = "transport", .default_value = "",

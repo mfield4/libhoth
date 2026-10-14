@@ -18,8 +18,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "htool_cmd.h"
 #include "protocol/status.h"
+#include "tools/common/htool_cmd.h"
 
 #define HTOOL_ERROR_HOST_COMMAND_START 537200
 
