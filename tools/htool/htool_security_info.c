@@ -7,8 +7,8 @@
 #include "host_commands.h"
 #include "htool.h"
 #include "htool_security_v2.h"
-#include "htool_security_version.h"
 #include "protocol/rot_firmware_version.h"
+#include "protocol/security_version.h"
 #include "tools/common/macros.h"
 
 int htool_info(const struct htool_invocation* inv) {
@@ -21,7 +21,7 @@ int htool_info(const struct htool_invocation* inv) {
   char fw_minor_version[HOTH_INFO_FW_MINOR_VERSION_SIZE + 1];
   memset(fw_minor_version, '\0', HOTH_INFO_FW_MINOR_VERSION_SIZE);
 
-  libhoth_security_version sv = htool_get_security_version(dev);
+  libhoth_security_version sv = libhoth_get_security_version(dev);
   switch (sv) {
     case LIBHOTH_SECURITY_V2: {
       {

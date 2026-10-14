@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBHOTH_TOOLS_HTOOL_HTOOL_SECURITY_VERSION_H_
-#define LIBHOTH_TOOLS_HTOOL_HTOOL_SECURITY_VERSION_H_
+#ifndef LIBHOTH_PROTOCOL_SECURITY_VERSION_H_
+#define LIBHOTH_PROTOCOL_SECURITY_VERSION_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,10 +29,11 @@ typedef enum {
 } libhoth_security_version;
 
 // Returns the security version of the connected Hoth device.
-libhoth_security_version htool_get_security_version(struct libhoth_device* dev);
+libhoth_security_version libhoth_get_security_version(
+    struct libhoth_device* dev);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // LIBHOTH_TOOLS_HTOOL_HTOOL_SECURITY_VERSION_H_
+#endif  // LIBHOTH_PROTOCOL_SECURITY_VERSION_H_

@@ -10,8 +10,8 @@
 #include "host_commands.h"
 #include "htool.h"
 #include "htool_security_v2.h"
-#include "htool_security_version.h"
 #include "protocol/host_cmd.h"
+#include "protocol/security_version.h"
 #include "tools/common/htool_cmd.h"
 #include "tools/common/macros.h"
 
@@ -39,7 +39,7 @@ static int get_cert_v2_data(const struct htool_invocation* inv,
     goto cleanup;
   }
 
-  libhoth_security_version sv = htool_get_security_version(dev);
+  libhoth_security_version sv = libhoth_get_security_version(dev);
   switch (sv) {
     case LIBHOTH_SECURITY_V2: {
       // Send Get Attestation Public Certificate Request
@@ -222,7 +222,7 @@ int htool_get_device_id_cert(const struct htool_invocation* inv) {
 
   uint8_t certificate[DEVICE_CERT_SIZE] = {0};
   uint8_t endorsement_certificate[DEVICE_ENDORSEMENT_CERT_SIZE] = {0};
-  libhoth_security_version sv = htool_get_security_version(dev);
+  libhoth_security_version sv = libhoth_get_security_version(dev);
   switch (sv) {
     case LIBHOTH_SECURITY_V2: {
       // Send Get Device ID Certificates Request
@@ -526,7 +526,7 @@ int htool_unload_attestation_key(const struct htool_invocation* inv) {
     return -1;
   }
 
-  libhoth_security_version sv = htool_get_security_version(dev);
+  libhoth_security_version sv = libhoth_get_security_version(dev);
   switch (sv) {
     case LIBHOTH_SECURITY_V2:
       return exec_unload_attestation_key(dev);
@@ -563,7 +563,7 @@ int htool_gen_attestation_key_v1(const struct htool_invocation* inv) {
 
   uint8_t csr[ATTESTATION_KEY_CSR_V1_SIZE] = {0};
   uint8_t wrapped_key[WRAPPED_ATTESTATION_KEY_SIZE] = {0};
-  libhoth_security_version sv = htool_get_security_version(dev);
+  libhoth_security_version sv = libhoth_get_security_version(dev);
   switch (sv) {
     case LIBHOTH_SECURITY_V2: {
       int hoth_status = exec_gen_attestation_key_v1(dev, csr, wrapped_key);
@@ -617,7 +617,7 @@ int htool_gen_attestation_key_v2(const struct htool_invocation* inv) {
 
   uint8_t csr[ATTESTATION_KEY_CSR_V2_SIZE] = {0};
   uint8_t wrapped_key[WRAPPED_ATTESTATION_KEY_SIZE] = {0};
-  libhoth_security_version sv = htool_get_security_version(dev);
+  libhoth_security_version sv = libhoth_get_security_version(dev);
   switch (sv) {
     case LIBHOTH_SECURITY_V2: {
       int hoth_status =
@@ -676,7 +676,7 @@ int htool_load_attestation_key(const struct htool_invocation* inv) {
     return -1;
   }
 
-  libhoth_security_version sv = htool_get_security_version(dev);
+  libhoth_security_version sv = libhoth_get_security_version(dev);
   switch (sv) {
     case LIBHOTH_SECURITY_V2:
       return exec_load_attestation_key(dev, wrapped_key, cert);
@@ -722,7 +722,7 @@ int htool_load_attestation_key_from_csr_v1(const struct htool_invocation* inv) {
     return -1;
   }
 
-  libhoth_security_version sv = htool_get_security_version(dev);
+  libhoth_security_version sv = libhoth_get_security_version(dev);
   switch (sv) {
     case LIBHOTH_SECURITY_V2:
       return exec_load_attestation_key_from_csr_v1(dev, wrapped_key, csr);
@@ -740,7 +740,7 @@ int htool_provision_attestation_key(const struct htool_invocation* inv) {
     return -1;
   }
 
-  libhoth_security_version sv = htool_get_security_version(dev);
+  libhoth_security_version sv = libhoth_get_security_version(dev);
   switch (sv) {
     case LIBHOTH_SECURITY_V2: {
       int status = exec_unload_attestation_key(dev);

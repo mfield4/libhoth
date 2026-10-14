@@ -29,7 +29,7 @@
 #include <vector>
 
 #include "htool_security_v2.h"
-#include "htool_security_version.h"
+#include "protocol/security_version.h"
 #include "protocol/test/libhoth_device_mock.h"
 #include "tools/htool/test/test_util.h"
 
@@ -62,9 +62,9 @@ extern "C" int htool_get_param_u32(const struct htool_invocation* inv,
 struct libhoth_device* mock_dev = nullptr;
 struct libhoth_device* htool_libhoth_device() { return mock_dev; }
 
-// Mocking htool_get_security_version
+// Mocking libhoth_get_security_version
 static libhoth_security_version mock_security_version = LIBHOTH_SECURITY_V2;
-libhoth_security_version htool_get_security_version(
+libhoth_security_version libhoth_get_security_version(
     struct libhoth_device* dev) {
   return mock_security_version;
 }
