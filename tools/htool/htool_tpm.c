@@ -20,7 +20,7 @@
 
 #include "host_commands.h"
 #include "htool.h"
-#include "htool_security_version.h"
+#include "protocol/security_version.h"
 #include "tools/common/htool_cmd.h"
 #include "transports/libhoth_device.h"
 
@@ -94,7 +94,7 @@ int htool_security_startup(const struct htool_invocation* inv) {
     return -1;
   }
 
-  libhoth_security_version sv = htool_get_security_version(dev);
+  libhoth_security_version sv = libhoth_get_security_version(dev);
   switch (sv) {
     case LIBHOTH_SECURITY_V2: {
       fprintf(stderr, "security startup is not supported on Security V2\n");

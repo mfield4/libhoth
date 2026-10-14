@@ -52,8 +52,6 @@ htool_lib = static_library(
         'htool_secure_boot.c',
         'htool_srtm.h',
         'htool_srtm.c',
-        'htool_security_version.h',
-        'htool_security_version.c',
         'htool_security_v2.h',
         'htool_security_v2.c',
         'htool_security_info.h',

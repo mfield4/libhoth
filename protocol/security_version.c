@@ -1,14 +1,13 @@
 
-#include "htool_security_version.h"
+#include "protocol/security_version.h"
 
 #include <stddef.h>
 #include <stdint.h>
 
-#include "host_commands.h"
-#include "htool.h"
 #include "protocol/host_cmd.h"
+#include "protocol/security_v2.h"
 
-libhoth_security_version htool_get_security_version(
+libhoth_security_version libhoth_get_security_version(
     struct libhoth_device* dev) {
   uint16_t command;
   int status;

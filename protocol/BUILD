@@ -740,3 +740,14 @@ cc_library(
     name = "target_reset",
     hdrs = ["target_reset.h"],
 )
+
+cc_library(
+    name = "security_version",
+    srcs = ["security_version.c"],
+    hdrs = ["security_version.h"],
+    deps = [
+        ":host_cmd",
+        ":security_v2",
+        "//transports:libhoth_device",
+    ],
+)

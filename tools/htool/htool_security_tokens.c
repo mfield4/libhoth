@@ -11,8 +11,8 @@
 #include "host_commands.h"
 #include "htool.h"
 #include "htool_security_v2.h"
-#include "htool_security_version.h"
 #include "protocol/host_cmd.h"
+#include "protocol/security_version.h"
 #include "tools/common/htool_cmd.h"
 #include "tools/common/macros.h"
 #include "transports/libhoth_device.h"
@@ -115,7 +115,7 @@ static int htool_get_tokens_in_set(const struct htool_invocation* inv,
     goto cleanup;
   }
 
-  libhoth_security_version sv = htool_get_security_version(dev);
+  libhoth_security_version sv = libhoth_get_security_version(dev);
   switch (sv) {
     case LIBHOTH_SECURITY_V2: {
       // Send Get Token Set Request
@@ -275,7 +275,7 @@ static int htool_get_token_set_count(const struct htool_invocation* inv,
   struct boot_nonce boot_nonce;
   struct detached_challenge_response_signature signature;
 
-  libhoth_security_version sv = htool_get_security_version(dev);
+  libhoth_security_version sv = libhoth_get_security_version(dev);
   switch (sv) {
     case LIBHOTH_SECURITY_V2: {
       // Send Get Token Count Request
@@ -402,7 +402,7 @@ static int htool_get_token_set_info(const struct htool_invocation* inv,
   struct detached_challenge_response_signature signature;
   struct token_set_info info;
 
-  libhoth_security_version sv = htool_get_security_version(dev);
+  libhoth_security_version sv = libhoth_get_security_version(dev);
   switch (sv) {
     case LIBHOTH_SECURITY_V2: {
       // Send Get Token Set Info Request
@@ -517,7 +517,7 @@ static int htool_fetch_single_attestation_file(
     goto cleanup;
   }
 
-  libhoth_security_version sv = htool_get_security_version(dev);
+  libhoth_security_version sv = libhoth_get_security_version(dev);
   switch (sv) {
     case LIBHOTH_SECURITY_V2: {
       // Copy the num_id into the data buffer

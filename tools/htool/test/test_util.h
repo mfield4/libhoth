@@ -16,12 +16,12 @@
 #include <vector>
 
 #include "protocol/host_cmd.h"
+#include "protocol/security_version.h"
 #include "protocol/test/libhoth_device_mock.h"
 #include "tools/common/htool_cmd.h"
 #include "tools/htool/host_commands.h"
 #include "tools/htool/htool.h"
 #include "tools/htool/htool_security_v2.h"
-#include "tools/htool/htool_security_version.h"
 #include "transports/libhoth_device.h"
 
 using ::testing::_;
@@ -59,12 +59,13 @@ class HtoolInvocationMock {
   MOCK_METHOD(int, GetParamU32, (const std::string& name, uint32_t* value));
 };
 
-// Declare an instance of htool_get_security_version for unit tests to define
+// Declare an instance of libhoth_get_security_version for unit tests to define
 // there own version of this function.
 // This decleration is needed for code(e.g. htool_provisioning.c), where it
 // is used but not defined.
 // The definition exists in the calling tests (e.g. htool_provisioning_test.cc)
-libhoth_security_version htool_get_security_version(struct libhoth_device* dev);
+libhoth_security_version libhoth_get_security_version(
+    struct libhoth_device* dev);
 
 // Mock for htool_exec_security_v2_cmd
 class HtoolSecurityV2Mock {
