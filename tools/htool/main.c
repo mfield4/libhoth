@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "git_version.h"
-#include "htool.h"
+#include "tools/htool/htool.h"
 
 int main(int argc, const char* const* argv) {
   const struct htool_config config = {.version = STABLE_GIT_COMMIT};

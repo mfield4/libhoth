@@ -4,6 +4,9 @@ load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
+# For the //examples:htool compatibility binary.
+exports_files(["main.c"])
+
 cc_library(
     name = "host_commands",
     textual_hdrs = [

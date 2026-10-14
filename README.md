@@ -237,3 +237,12 @@ Usage: console
         After releasing the device, how long we should wait before claiming it again. Decrease to reduce console latency. Increase to reduce contention between concurrent clients.
 ```
 
+### Extending htool
+
+Everything except `main()` is in the `htool_lib` library
+(`//tools/htool:htool_lib` in Bazel). To build an htool with extra commands or
+`--transport` backends, write your own `main()` that passes them to
+`htool_run()` in a `struct htool_config`, and link it against `htool_lib`.
+Nothing in `tools/htool` needs to change. See
+[`examples/htool_extension_example.c`](examples/htool_extension_example.c) for
+a template and `tools/htool/htool.h` for the API.
