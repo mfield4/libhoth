@@ -35,7 +35,6 @@ cc_library(
     name = "htool_cmd",
     srcs = ["htool_cmd.c"],
     hdrs = ["htool_cmd.h"],
-    deps = ["//:git_version"],
 )
 
 cc_library(

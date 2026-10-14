@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "git_version.h"
 #include "host_commands.h"
 #include "htool_authz_command.h"
 #include "htool_cmd.h"
@@ -2416,5 +2417,5 @@ static const struct htool_param GLOBAL_FLAGS[] = {
     {}};
 
 int main(int argc, const char* const* argv) {
-  return htool_main(GLOBAL_FLAGS, CMDS, argc - 1, &argv[1]);
+  return htool_main(GLOBAL_FLAGS, CMDS, STABLE_GIT_COMMIT, argc - 1, &argv[1]);
 }
