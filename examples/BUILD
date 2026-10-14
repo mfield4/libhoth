@@ -46,6 +46,7 @@ cc_library(
     name = "htool_header",
     hdrs = ["htool.h"],
     deps = [
+        ":htool_cmd",
         "//protocol:libhoth_status",
     ],
 )
@@ -166,8 +167,10 @@ cc_test(
     ],
 )
 
-cc_binary(
-    name = "htool",
+# Everything in htool except main(). Link this from a custom main.c to add
+# commands and transports via htool_run(); see htool.h.
+cc_library(
+    name = "htool_lib",
     srcs = [
         "htool.c",
         "htool_authz_command.c",
@@ -201,6 +204,7 @@ cc_binary(
         "htool_raw_host_command.h",
         "htool_rot_usb.c",
         "htool_rot_usb.h",
+        "htool_run.c",
         "htool_sbs_dual.c",
         "htool_sbs_dual.h",
         "htool_sbs_single.c",
@@ -222,7 +226,7 @@ cc_binary(
         "htool_usb.c",
         "htool_usb.h",
     ],
-    features = ["fully_static_link_target"],
+    hdrs = ["htool.h"],
     deps = [
         ":host_commands",
         ":htool_cmd",
@@ -236,7 +240,6 @@ cc_binary(
         ":htool_security_version",
         ":htool_target_watchdog",
         ":srtm",
-        "//:git_version",
         "//protocol:authz_record",
         "//protocol:chipinfo",
         "//protocol:console",
@@ -274,9 +277,21 @@ cc_binary(
         "//transports:libhoth_usb_device",
         "@libusb",
     ] + select({
+        # Must be on the library: DBUS_BACKEND reaches htool_dbus.c only
+        # through the defines that //transports:libhoth_dbus propagates.
         ":dbus_backend": ["//transports:libhoth_dbus"],
         "//conditions:default": [],
     }),
+)
+
+cc_binary(
+    name = "htool",
+    srcs = ["main.c"],
+    features = ["fully_static_link_target"],
+    deps = [
+        ":htool_lib",
+        "//:git_version",
+    ],
 )
 
 cc_test(
