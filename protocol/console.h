@@ -23,6 +23,7 @@ extern "C" {
 #include <stdint.h>
 #include <termios.h>
 
+#include "protocol/host_cmd.h"
 #include "protocol/status.h"
 #include "transports/libhoth_device.h"
 
@@ -149,6 +150,18 @@ libhoth_error libhoth_get_uart_config(
 libhoth_error libhoth_set_uart_config(
     struct libhoth_device* dev, const struct libhoth_htool_console_opts* opts,
     struct hoth_channel_uart_config* config);
+
+#define HOTH_CMD_CONSOLE_REQUEST 0x0097
+#define HOTH_CMD_CONSOLE_READ 0x0098
+
+enum hoth_console_read_subcmd {
+  CONSOLE_READ_NEXT = 0,
+  CONSOLE_READ_RECENT = 1,
+};
+
+struct hoth_params_console_read_v1 {
+  uint8_t subcmd;
+} __hoth_align1;
 
 #ifdef __cplusplus
 }

@@ -30,6 +30,8 @@
 #include "htool_console.h"
 #include "transports/libhoth_device.h"
 
+#define MAILBOX_SIZE 1024
+
 const char kAnsiReset[] = "\033[0m";
 const char kAnsiRed[] = "\033[31m";
 
