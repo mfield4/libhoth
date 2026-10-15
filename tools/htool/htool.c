@@ -540,7 +540,7 @@ static int command_target_reset_pulse(const struct htool_invocation* inv) {
 }
 
 static int command_console(const struct htool_invocation* inv) {
-  struct libhoth_htool_console_opts opts = {};
+  struct libhoth_console_opts opts = {};
 
   if (htool_get_param_bool(inv, "snapshot", &opts.snapshot)) {
     return -1;
