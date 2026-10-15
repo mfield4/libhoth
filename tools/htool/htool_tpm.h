@@ -21,22 +21,6 @@
 extern "C" {
 #endif
 
-#define HOTH_PRV_CMD_SET_TPM_MODE 0x0051
-#define HOTH_PRV_CMD_GET_TPM_MODE 0x0052
-#define HOTH_PRV_CMD_HOTH_TPM 0x0033
-
-enum ec_tpm_mode {
-  TPM_MODE_DISABLED = 0,  // Turn the TPM off: typically used to turn off one
-                          // TPM in 1x2Socket mode
-  TPM_MODE_TPM_SPI = 1,   // TPM SPI wire protocol (TCG standard)
-  TPM_MODE_SPI_NOR_MAILBOX = 2,  // SPI EEPROM protocol tunneled through the
-                                 // mailbox/host command
-};
-struct tpm_mode {
-  uint8_t mode;  // enum ec_tpm_mode
-  uint8_t reserved[3];
-} __attribute__((packed, aligned(4)));
-
 int htool_set_tpm_mode(const struct htool_invocation* inv);
 int htool_get_tpm_mode(const struct htool_invocation* inv);
 int htool_security_startup(const struct htool_invocation* inv);

@@ -842,3 +842,26 @@ cc_library(
         "//transports:libhoth_device",
     ],
 )
+
+cc_library(
+    name = "tpm",
+    srcs = ["tpm.c"],
+    hdrs = ["tpm.h"],
+    deps = [
+        ":host_cmd",
+        ":security_v2",
+        "//transports:libhoth_device",
+    ],
+)
+
+cc_test(
+    name = "tpm_test",
+    srcs = ["tpm_test.cc"],
+    deps = [
+        ":host_cmd",
+        ":tpm",
+        "//protocol/test:libhoth_device_mock",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
+)

@@ -21,6 +21,7 @@
 #include "host_commands.h"
 #include "htool.h"
 #include "protocol/security_version.h"
+#include "protocol/tpm.h"
 #include "tools/common/htool_cmd.h"
 #include "transports/libhoth_device.h"
 
@@ -32,7 +33,7 @@ int htool_set_tpm_mode(const struct htool_invocation* inv) {
 
   const char* mode_str = inv->cmd->verbs[2];
 
-  uint32_t mode;
+  enum ec_tpm_mode mode;
   if (strcmp(mode_str, "disabled") == 0) {
     mode = TPM_MODE_DISABLED;
   } else if (strcmp(mode_str, "tpm_spi") == 0) {
@@ -45,13 +46,7 @@ int htool_set_tpm_mode(const struct htool_invocation* inv) {
     return -1;
   }
 
-  struct tpm_mode req = {
-      .mode = mode,
-  };
-
-  return libhoth_hostcmd_exec(
-      dev, HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_SET_TPM_MODE, 0, &req,
-      sizeof(req), NULL, 0, NULL);
+  return libhoth_tpm_set_mode(dev, mode);
 }
 
 int htool_get_tpm_mode(const struct htool_invocation* inv) {
@@ -61,9 +56,7 @@ int htool_get_tpm_mode(const struct htool_invocation* inv) {
   }
 
   struct tpm_mode resp;
-  int ret = libhoth_hostcmd_exec(
-      dev, HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_GET_TPM_MODE, 0, NULL, 0,
-      &resp, sizeof(resp), NULL);
+  int ret = libhoth_tpm_get_mode(dev, &resp);
   if (ret) {
     return ret;
   }
