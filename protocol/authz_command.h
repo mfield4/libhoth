@@ -46,6 +46,12 @@ struct hoth_authorized_command_request {
   uint32_t arg_bytes[];
 } __attribute__((packed, aligned(4)));
 
+// Builds an unsigned authorized-command request for `opcode`, bound to
+// `hardware_identity` and the AUTHORIZED_COMMAND_NONCE_SIZE-byte `nonce`.
+struct hoth_authorized_command_request libhoth_authz_command_build_request(
+    uint64_t hardware_identity, uint32_t opcode, uint32_t key_info,
+    const uint32_t* nonce);
+
 #ifdef __cplusplus
 }
 #endif

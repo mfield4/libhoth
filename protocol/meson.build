@@ -36,6 +36,7 @@ protocol_srcs = [
     'spi_passthrough.c',
     'srtm.c',
     'target_control.c',
+    'authz_command.c',
 ]
 
 incdir = libhoth_include_dirs

@@ -17,22 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "host_commands.h"
-
-struct hoth_authorized_command_request authz_command_build_request(
-    uint64_t hardware_identity, uint32_t opcode, uint32_t key_info,
-    const uint32_t* nonce) {
-  struct hoth_authorized_command_request request = {
-      .version = AUTHORIZED_COMMAND_VERSION,
-      .size = sizeof(request),
-      .key_info = key_info,
-      .dev_id_0 = hardware_identity & UINT32_C(0xffffffff),
-      .dev_id_1 = hardware_identity >> 32,
-      .opcode = opcode,
-  };
-  memcpy(request.nonce, nonce, sizeof(request.nonce));
-  return request;
-}
+#include "protocol/authz_command.h"
 
 void authz_command_print_request(
     const struct hoth_authorized_command_request* request) {

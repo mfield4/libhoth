@@ -57,6 +57,7 @@
 #include "htool_tpm.h"
 #include "htool_update_session.h"
 #include "htool_usb.h"
+#include "protocol/authz_command.h"
 #include "protocol/authz_record.h"
 #include "protocol/chipinfo.h"
 #include "protocol/console.h"
@@ -307,9 +308,10 @@ static int command_authz_host_command_build(
     return -1;
   }
 
-  struct hoth_authorized_command_request request = authz_command_build_request(
-      chipinfo_resp.data.hoth_device_id.hardware_identity, opcode,
-      nonce_resp.supported_key_info, nonce_resp.nonce);
+  struct hoth_authorized_command_request request =
+      libhoth_authz_command_build_request(
+          chipinfo_resp.data.hoth_device_id.hardware_identity, opcode,
+          nonce_resp.supported_key_info, nonce_resp.nonce);
   authz_command_print_request(&request);
   return 0;
 }

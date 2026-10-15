@@ -23,10 +23,6 @@ extern "C" {
 
 struct hoth_authorized_command_request;
 
-struct hoth_authorized_command_request authz_command_build_request(
-    uint64_t hardware_identity, uint32_t opcode, uint32_t key_info,
-    const uint32_t* nonce);
-
 void authz_command_print_request(
     const struct hoth_authorized_command_request* request);
 

@@ -179,6 +179,7 @@ cc_library(
         ":htool_security_certificates",
         ":htool_security_tokens",
         ":htool_target_watchdog",
+        "//protocol:authz_command",
         "//protocol:authz_record",
         "//protocol:chipinfo",
         "//protocol:console",
