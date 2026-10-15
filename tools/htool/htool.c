@@ -68,6 +68,7 @@
 #include "protocol/progress.h"
 #include "protocol/reboot.h"
 #include "protocol/rot_firmware_version.h"
+#include "protocol/spi_passthrough.h"
 #include "protocol/spi_proxy.h"
 #include "protocol/target_reset.h"
 #include "protocol/target_watchdog.h"
@@ -586,8 +587,7 @@ static int command_flash_spi_info(const struct htool_invocation* inv) {
     return -1;
   }
   struct hoth_response_flash_spi_info response;
-  int status = libhoth_hostcmd_exec(dev, HOTH_CMD_FLASH_SPI_INFO, /*version=*/0,
-                                    NULL, 0, &response, sizeof(response), NULL);
+  int status = libhoth_flash_spi_info(dev, &response);
   if (status) {
     return -1;
   }
@@ -624,10 +624,7 @@ static int command_passthrough_disable(const struct htool_invocation* inv) {
     return -1;
   }
 
-  return libhoth_hostcmd_exec(
-      dev,
-      HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_HOTH_SPS_PASSTHROUGH_DISABLE,
-      /*version=*/0, NULL, 0, NULL, 0, NULL);
+  return libhoth_spi_passthrough_set(dev, false);
 }
 
 static int command_passthrough_enable(const struct htool_invocation* inv) {
@@ -636,10 +633,7 @@ static int command_passthrough_enable(const struct htool_invocation* inv) {
     return -1;
   }
 
-  return libhoth_hostcmd_exec(
-      dev,
-      HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_HOTH_SPS_PASSTHROUGH_ENABLE,
-      /*version=*/0, NULL, 0, NULL, 0, NULL);
+  return libhoth_spi_passthrough_set(dev, true);
 }
 
 static int command_srtm(const struct htool_invocation* inv) {

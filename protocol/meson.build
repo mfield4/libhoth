@@ -33,6 +33,7 @@ protocol_srcs = [
     'security_version.c',
     'security_v2.c',
     'target_reset.c',
+    'spi_passthrough.c',
 ]
 
 incdir = libhoth_include_dirs

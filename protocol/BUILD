@@ -735,9 +735,23 @@ cc_test(
 
 cc_library(
     name = "spi_passthrough",
+    srcs = ["spi_passthrough.c"],
     hdrs = ["spi_passthrough.h"],
     deps = [
         ":host_cmd",
+        "//transports:libhoth_device",
+    ],
+)
+
+cc_test(
+    name = "spi_passthrough_test",
+    srcs = ["spi_passthrough_test.cc"],
+    deps = [
+        ":host_cmd",
+        ":spi_passthrough",
+        "//protocol/test:libhoth_device_mock",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
     ],
 )
 

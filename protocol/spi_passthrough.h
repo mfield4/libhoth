@@ -15,9 +15,11 @@
 #ifndef LIBHOTH_PROTOCOL_SPI_PASSTHROUGH_H_
 #define LIBHOTH_PROTOCOL_SPI_PASSTHROUGH_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "protocol/host_cmd.h"
+#include "transports/libhoth_device.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,6 +49,15 @@ struct hoth_response_flash_spi_info {
 // Re-enables SPS passthrough. Future out-of-band access to the SPI flash will
 // fail.
 #define HOTH_PRV_CMD_HOTH_SPS_PASSTHROUGH_ENABLE 0x003c
+
+// Enables or disables SPS->SPI passthrough. Returns 0 on success, or the
+// libhoth_hostcmd_exec() error code.
+int libhoth_spi_passthrough_set(struct libhoth_device* dev, bool enable);
+
+// Reads the SPI flash JEDEC ID, device ID and status registers. Returns 0 on
+// success, or the libhoth_hostcmd_exec() error code.
+int libhoth_flash_spi_info(struct libhoth_device* dev,
+                           struct hoth_response_flash_spi_info* info);
 
 #ifdef __cplusplus
 }
