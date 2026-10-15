@@ -19,11 +19,16 @@
 #include <unistd.h>
 
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <string>
 
 #include "test/libhoth_device_mock.h"
 
 using ::testing::_;
 using ::testing::DoAll;
+using ::testing::InSequence;
 using ::testing::Return;
 
 constexpr uint32_t kCmdChannelRead =
@@ -53,4 +58,44 @@ TEST_F(LibHothTest, read_console_test) {
   EXPECT_EQ(libhoth_read_console(&hoth_dev_, STDOUT_FILENO, false, 0, &offset),
             HOTH_SUCCESS);
   EXPECT_EQ(offset, 100 + 1012);
+}
+
+// Runs libhoth_console_snapshot_legacy() and returns what it wrote.
+static std::string RunLegacySnapshot(struct libhoth_device* dev,
+                                     libhoth_error* status) {
+  char* data = nullptr;
+  size_t size = 0;
+  FILE* out = open_memstream(&data, &size);
+  *status = libhoth_console_snapshot_legacy(dev, out);
+  fclose(out);
+  std::string result(data, size);
+  free(data);
+  return result;
+}
+
+TEST_F(LibHothTest, console_snapshot_legacy_test) {
+  const uint32_t empty = 0;
+  const char kLog[] = "hello";
+  InSequence seq;
+  EXPECT_CALL(mock_, send(_, UsesCommand(HOTH_CMD_CONSOLE_REQUEST), _))
+      .WillOnce(Return(LIBHOTH_OK));
+  EXPECT_CALL(mock_, receive)
+      .WillOnce(DoAll(CopyResp(&empty, 0), Return(LIBHOTH_OK)));
+  EXPECT_CALL(mock_, send(_, UsesCommand(HOTH_CMD_CONSOLE_READ), _))
+      .WillOnce(Return(LIBHOTH_OK));
+  EXPECT_CALL(mock_, receive)
+      .WillOnce(DoAll(CopyResp(kLog, sizeof(kLog)), Return(LIBHOTH_OK)));
+
+  libhoth_error status;
+  EXPECT_EQ(RunLegacySnapshot(&hoth_dev_, &status), "hello\n");
+  EXPECT_EQ(status, HOTH_SUCCESS);
+}
+
+TEST_F(LibHothTest, console_snapshot_legacy_request_failure_test) {
+  EXPECT_CALL(mock_, send(_, UsesCommand(HOTH_CMD_CONSOLE_REQUEST), _))
+      .WillOnce(Return(LIBHOTH_ERR_FAIL));
+
+  libhoth_error status;
+  EXPECT_EQ(RunLegacySnapshot(&hoth_dev_, &status), "");
+  EXPECT_NE(status, HOTH_SUCCESS);
 }

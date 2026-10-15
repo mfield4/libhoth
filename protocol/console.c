@@ -16,6 +16,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "host_cmd.h"
@@ -252,4 +253,37 @@ libhoth_error libhoth_set_uart_config(
       dev,
       HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_HOTH_CHANNEL_UART_CONFIG_SET,
       /*version=*/0, &req, sizeof(req), NULL, 0, NULL);
+}
+
+libhoth_error libhoth_console_snapshot_legacy(struct libhoth_device* dev,
+                                              FILE* out) {
+  size_t response_bytes_written;
+  libhoth_error status =
+      libhoth_hostcmd_exec_v2(dev, HOTH_CMD_CONSOLE_REQUEST, 0, NULL, 0, NULL,
+                              0, &response_bytes_written);
+  if (status != HOTH_SUCCESS) {
+    fprintf(stderr, "HOTH_CMD_CONSOLE_REQUEST status: 0x%016llx\n",
+            (unsigned long long)status);
+    return status;
+  }
+
+  struct hoth_params_console_read_v1 read_request = {.subcmd =
+                                                         CONSOLE_READ_NEXT};
+  const size_t max_bytes_per_read =
+      LIBHOTH_MAILBOX_SIZE - sizeof(struct hoth_host_response);
+  while (true) {
+    char buf[LIBHOTH_MAILBOX_SIZE];
+    status = libhoth_hostcmd_exec_v2(
+        dev, HOTH_CMD_CONSOLE_READ, 0, &read_request, sizeof(read_request), buf,
+        max_bytes_per_read, &response_bytes_written);
+    if (status != HOTH_SUCCESS) {
+      fprintf(stderr, "HOTH_CMD_CONSOLE_READ status: 0x%016llx\n",
+              (unsigned long long)status);
+      return status;
+    }
+    fwrite(buf, strnlen(buf, sizeof(buf)), 1, out);
+    if (response_bytes_written < max_bytes_per_read) break;
+  }
+  fputc('\n', out);
+  return status;
 }

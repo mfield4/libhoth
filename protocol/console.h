@@ -21,6 +21,7 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <termios.h>
 
 #include "protocol/host_cmd.h"
@@ -162,6 +163,11 @@ enum hoth_console_read_subcmd {
 struct hoth_params_console_read_v1 {
   uint8_t subcmd;
 } __hoth_align1;
+
+// Writes a snapshot of the console buffer to `out` using the legacy
+// HOTH_CMD_CONSOLE_REQUEST/HOTH_CMD_CONSOLE_READ host commands.
+libhoth_error libhoth_console_snapshot_legacy(struct libhoth_device* dev,
+                                              FILE* out);
 
 #ifdef __cplusplus
 }
