@@ -202,6 +202,7 @@ cc_library(
         "//protocol:reboot",
         "//protocol:rot_firmware_version",
         "//protocol:secure_boot",
+        "//protocol:security_info",
         "//protocol:security_v2",
         "//protocol:security_version",
         "//protocol:spi_passthrough",

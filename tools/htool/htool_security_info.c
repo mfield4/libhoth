@@ -4,12 +4,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "host_commands.h"
 #include "htool.h"
 #include "protocol/rot_firmware_version.h"
-#include "protocol/security_v2.h"
+#include "protocol/security_info.h"
 #include "protocol/security_version.h"
-#include "tools/common/macros.h"
 
 int htool_info(const struct htool_invocation* inv) {
   struct libhoth_device* dev = htool_libhoth_device();
@@ -25,24 +23,7 @@ int htool_info(const struct htool_invocation* inv) {
   switch (sv) {
     case LIBHOTH_SECURITY_V2: {
       {
-        // Send Info Request
-        uint8_t request_storage_hdr[HOTH_SECURITY_V2_REQUEST_SIZE(0)] = {};
-        uint8_t response_storage_hdr[HOTH_SECURITY_V2_RESPONSE_SIZE(1) +
-                                     sizeof(struct hoth_info)] = {};
-
-        struct libhoth_security_v2_param response_params[] = {
-            {
-                .data = &info,
-                .size = sizeof(struct hoth_info),
-            },
-        };
-        int status = libhoth_security_v2_exec(
-            dev, /*major=*/HOTH_PRV_CMD_HOTH_SECURITY_V2_INFO_MAJOR_COMMAND,
-            /*minor=*/0,
-            /*base_command=*/HOTH_BASE_CMD(HOTH_PRV_CMD_HOTH_SECURITY_V2),
-            LIBHOTH_SECURITY_V2_BUFFER_PARAM(request_storage_hdr), NULL, 0,
-            LIBHOTH_SECURITY_V2_BUFFER_PARAM(response_storage_hdr),
-            response_params, ARRAY_SIZE(response_params));
+        int status = libhoth_security_info_get(dev, &info);
         if (status != 0) {
           return status;
         }

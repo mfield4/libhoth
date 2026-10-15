@@ -865,3 +865,26 @@ cc_test(
         "@googletest//:gtest_main",
     ],
 )
+
+cc_library(
+    name = "security_info",
+    srcs = ["security_info.c"],
+    hdrs = ["security_info.h"],
+    deps = [
+        ":security_v2",
+        "//transports:libhoth_device",
+    ],
+)
+
+cc_test(
+    name = "security_info_test",
+    srcs = ["security_info_test.cc"],
+    deps = [
+        ":host_cmd",
+        ":security_info",
+        ":security_v2",
+        "//protocol/test:libhoth_device_mock",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
+)
