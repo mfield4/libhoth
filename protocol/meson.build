@@ -31,6 +31,7 @@ protocol_srcs = [
     'status.c',
     'target_watchdog.c',
     'security_version.c',
+    'security_v2.c',
 ]
 
 incdir = libhoth_include_dirs

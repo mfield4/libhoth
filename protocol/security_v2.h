@@ -15,9 +15,11 @@
 #ifndef LIBHOTH_PROTOCOL_SECURITY_V2_H_
 #define LIBHOTH_PROTOCOL_SECURITY_V2_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "protocol/host_cmd.h"
+#include "transports/libhoth_device.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -190,6 +192,92 @@ struct hoth_security_v2_parameter {
  * command.
  */
 #define HOTH_PRV_CMD_HOTH_SECURITY_V2_INFO_MAJOR_COMMAND 0x0003
+
+// Elliptic Curve signature as per the NIST P256 standard. All fields are
+// little-endian with a 32-bit word size. p256_from_le_bin can be used to get a
+// usable pair of p256_ints.
+struct ec_p256_signature {
+  // The r parameter of the EC P256 signature. 32 bytes.
+  uint8_t r[32];
+  // The s parameter of the EC P256 signature. 32 bytes.
+  uint8_t s[32];
+};
+
+// Structures used for lightweight passing of allocated buffers/params.
+struct libhoth_security_v2_buffer {
+  uint8_t* data;
+  uint16_t size;
+  uint16_t bytes_consumed;
+};
+struct libhoth_security_v2_param {
+  void* data;
+  uint16_t size;
+};
+
+struct libhoth_security_v2_serialized_param {
+  // The number of bytes in this parameter's value.
+  uint16_t size;
+
+  // Reserved Bytes
+  uint16_t reserved;
+
+  // This parameter's value.
+  uint8_t value[];
+};
+
+struct libhoth_security_v2_serialized_response_hdr {
+  // The number of parameters that follow the header in this response.
+  uint16_t param_count;
+
+  // This field ensures that the size of this structure is a multiple of
+  // 32-bits, encouraging proper alignment of structures written after
+  // it in a byte stream.
+  // Its value should never be looked at, but should be set to zero to
+  // ensure consistent behavior if the structure is ever signed.
+  uint16_t reserved;
+};
+
+// Convenience macro for initializing a buffer from allocated storage. Intended
+// for passing as a parameter to libhoth_security_v2_exec.
+#define LIBHOTH_SECURITY_V2_BUFFER_PARAM(storage)          \
+  (&(struct libhoth_security_v2_buffer){.data = (storage), \
+                                        .size = sizeof((storage))})
+
+// Convenience macro for initializing a buffer from allocated storage. Intended
+// for passing as a parameter to libhoth_security_v2_exec.
+#define LIBHOTH_SECURITY_V2_BUFFER_PARAM_WITH_VARIABLE_SIZE(storage,      \
+                                                            storage_size) \
+  (&(struct libhoth_security_v2_buffer){.data = (storage),                \
+                                        .size = (storage_size)})
+
+// Executes a SECURITY_V2 host command with `major.minor` command code. The
+// request/response buffers serve as backing storage for the command, and the
+// request/response params represent data that will be copied to/from the
+// buffers.
+int libhoth_security_v2_exec(
+    struct libhoth_device* dev, uint8_t major, uint8_t minor,
+    uint16_t base_command, struct libhoth_security_v2_buffer* request_buffer,
+    const struct libhoth_security_v2_param* request_params,
+    uint16_t request_param_count,
+    struct libhoth_security_v2_buffer* response_buffer,
+    struct libhoth_security_v2_param* response_params,
+    uint16_t response_param_count);
+// Executes a SECURITY_V2 host command with `major.minor` code, using serialized
+// response params
+int libhoth_security_v2_exec_serialized(
+    struct libhoth_device* dev, uint8_t major, uint8_t minor,
+    uint16_t base_command, struct libhoth_security_v2_buffer* request_buffer,
+    const struct libhoth_security_v2_param* request_params,
+    uint16_t request_param_count,
+    struct libhoth_security_v2_buffer* response_buffer,
+    const struct libhoth_security_v2_serialized_param** response_params[],
+    uint16_t response_param_count);
+
+// Returns the necessary padding given the size
+static inline size_t libhoth_security_v2_padding_size(uint16_t size) {
+  size_t align = size % sizeof(uint32_t);
+  return align == 0 ? 0 : sizeof(uint32_t) - align;
+}
 
 #ifdef __cplusplus
 }

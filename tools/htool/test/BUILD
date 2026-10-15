@@ -7,12 +7,12 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//protocol:host_cmd",
+        "//protocol:security_v2",
         "//protocol:security_version",
         "//protocol/test:libhoth_device_mock",
         "//tools/common:htool_cmd",
         "//tools/htool:host_commands",
         "//tools/htool:htool_header",
-        "//tools/htool:htool_security_v2",
         "//transports:libhoth_device",
         "@googletest//:gtest",
     ],

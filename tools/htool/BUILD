@@ -60,32 +60,14 @@ cc_library(
 )
 
 cc_library(
-    name = "htool_security_v2",
-    srcs = ["htool_security_v2.c"],
-    hdrs = ["htool_security_v2.h"],
-    deps = [
-        ":host_commands",
-        ":htool_header",
-        "//protocol:host_cmd",
-        "//transports:libhoth_device",
-    ],
-)
-
-cc_library(
-    name = "htool_security_v2_defs",
-    hdrs = ["htool_security_v2_defs.h"],
-)
-
-cc_library(
     name = "htool_security_certificates",
     srcs = ["htool_security_certificates.c"],
     hdrs = ["htool_security_certificates.h"],
     deps = [
         ":host_commands",
         ":htool_header",
-        ":htool_security_v2",
-        ":htool_security_v2_defs",
         "//protocol:host_cmd",
+        "//protocol:security_v2",
         "//protocol:security_version",
         "//tools/common:htool_cmd",
         "//tools/common:macros",
@@ -99,9 +81,8 @@ cc_library(
     deps = [
         ":host_commands",
         ":htool_header",
-        ":htool_security_v2",
-        ":htool_security_v2_defs",
         "//protocol:host_cmd",
+        "//protocol:security_v2",
         "//protocol:security_version",
         "//tools/common:htool_cmd",
         "//tools/common:macros",
@@ -114,7 +95,7 @@ cc_test(
     srcs = ["htool_security_certificates_test.cc"],
     deps = [
         ":htool_security_certificates",
-        ":htool_security_v2",
+        "//protocol:security_v2",
         "//protocol:security_version",
         "//protocol/test:libhoth_device_mock",
         "//tools/htool/test:test_util",
@@ -128,21 +109,7 @@ cc_test(
     srcs = ["htool_security_tokens_test.cc"],
     deps = [
         ":htool_security_tokens",
-        ":htool_security_v2",
-        "//protocol:security_version",
-        "//protocol/test:libhoth_device_mock",
-        "//tools/htool/test:test_util",
-        "@googletest//:gtest",
-        "@googletest//:gtest_main",
-    ],
-)
-
-cc_test(
-    name = "htool_security_v2_test",
-    srcs = ["htool_security_v2_test.cc"],
-    deps = [
-        ":host_commands",
-        ":htool_security_v2",
+        "//protocol:security_v2",
         "//protocol:security_version",
         "//protocol/test:libhoth_device_mock",
         "//tools/htool/test:test_util",
@@ -217,8 +184,6 @@ cc_library(
         ":htool_provisioning",
         ":htool_security_certificates",
         ":htool_security_tokens",
-        ":htool_security_v2",
-        ":htool_security_v2_defs",
         ":htool_target_watchdog",
         ":srtm",
         "//protocol:authz_record",
@@ -246,6 +211,7 @@ cc_library(
         "//protocol:reboot",
         "//protocol:rot_firmware_version",
         "//protocol:secure_boot",
+        "//protocol:security_v2",
         "//protocol:security_version",
         "//protocol:spi_proxy",
         "//protocol:statistics",
