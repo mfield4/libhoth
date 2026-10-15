@@ -707,7 +707,18 @@ cc_library(
 
 cc_library(
     name = "authz_command",
+    srcs = ["authz_command.c"],
     hdrs = ["authz_command.h"],
+)
+
+cc_test(
+    name = "authz_command_test",
+    srcs = ["authz_command_test.cc"],
+    deps = [
+        ":authz_command",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
 )
 
 cc_library(
