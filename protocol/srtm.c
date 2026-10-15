@@ -1,12 +1,27 @@
-#include "htool_srtm.h"
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
+#include "protocol/srtm.h"
+
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "host_commands.h"
+#include "protocol/host_cmd.h"
 
-int srtm_request_from_hex_measurement(struct hoth_srtm_request* request,
-                                      const char* measurement) {
+int libhoth_srtm_request_from_hex(struct hoth_srtm_request* request,
+                                  const char* measurement) {
   size_t hex_length = strlen(measurement);
   if (hex_length == 0) {
     fprintf(stderr, "Must provide a measurement.\n");
@@ -41,4 +56,11 @@ int srtm_request_from_hex_measurement(struct hoth_srtm_request* request,
   }
   request->data_size = (hex_length / 2);
   return 0;
+}
+
+int libhoth_srtm(struct libhoth_device* dev,
+                 const struct hoth_srtm_request* request) {
+  return libhoth_hostcmd_exec(
+      dev, HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_HOTH_SRTM,
+      /*version=*/0, request, sizeof(*request), NULL, 0, NULL);
 }

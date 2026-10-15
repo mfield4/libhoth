@@ -50,8 +50,6 @@ htool_lib = static_library(
         'htool_usb.c',
         'htool_secure_boot.h',
         'htool_secure_boot.c',
-        'htool_srtm.h',
-        'htool_srtm.c',
         'htool_security_info.h',
         'htool_security_info.c',
         'htool_provisioning.h',
