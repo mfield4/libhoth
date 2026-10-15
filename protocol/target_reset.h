@@ -17,6 +17,8 @@
 
 #include <stdint.h>
 
+#include "transports/libhoth_device.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -47,6 +49,15 @@ struct hoth_request_reset_target {
 // Arm the coordinated reset trigger, which will cause the hoth to perform a
 // hard reset when it receives the hardware trigger event.
 #define HOTH_PRV_CMD_HOTH_ARM_COORDINATED_RESET 0x001A
+
+// Resets the target device (put in reset, release, or pulse). Returns 0 on
+// success, or the libhoth_hostcmd_exec() error code.
+int libhoth_target_reset(struct libhoth_device* dev,
+                         enum hoth_target_reset_option option);
+
+// Arms the coordinated reset trigger. Returns 0 on success, or the
+// libhoth_hostcmd_exec() error code.
+int libhoth_arm_coordinated_reset(struct libhoth_device* dev);
 
 #ifdef __cplusplus
 }

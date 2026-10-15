@@ -69,6 +69,7 @@
 #include "protocol/reboot.h"
 #include "protocol/rot_firmware_version.h"
 #include "protocol/spi_proxy.h"
+#include "protocol/target_reset.h"
 #include "protocol/target_watchdog.h"
 #include "protocol/util.h"
 #include "tools/common/htool_cmd.h"
@@ -514,18 +515,12 @@ cleanup1:
   return result;
 }
 
-static int do_target_reset(uint32_t reset_option) {
+static int do_target_reset(enum hoth_target_reset_option option) {
   struct libhoth_device* dev = htool_libhoth_device();
   if (!dev) {
     return -1;
   }
-  struct hoth_request_reset_target req = {
-      .target_id = RESET_TARGET_ID_RSTCTRL0,
-      .reset_option = reset_option,
-  };
-  return libhoth_hostcmd_exec(
-      dev, HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_HOTH_RESET_TARGET, 0,
-      &req, sizeof(req), NULL, 0, NULL);
+  return libhoth_target_reset(dev, option);
 }
 
 static int command_target_reset_on(const struct htool_invocation* inv) {
@@ -620,10 +615,7 @@ static int command_arm_coordinated_reset(const struct htool_invocation* inv) {
     return -1;
   }
 
-  return libhoth_hostcmd_exec(
-      dev,
-      HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_HOTH_ARM_COORDINATED_RESET,
-      /*version=*/0, NULL, 0, NULL, 0, NULL);
+  return libhoth_arm_coordinated_reset(dev);
 }
 
 static int command_passthrough_disable(const struct htool_invocation* inv) {
