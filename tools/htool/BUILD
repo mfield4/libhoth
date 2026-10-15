@@ -218,6 +218,7 @@ cc_library(
         "//protocol:security_version",
         "//protocol:spi_proxy",
         "//protocol:statistics",
+        "//protocol:target_reset",
         "//protocol:target_watchdog",
         "//protocol:update_session",
         "//protocol:util",

@@ -753,7 +753,24 @@ cc_library(
 
 cc_library(
     name = "target_reset",
+    srcs = ["target_reset.c"],
     hdrs = ["target_reset.h"],
+    deps = [
+        ":host_cmd",
+        "//transports:libhoth_device",
+    ],
+)
+
+cc_test(
+    name = "target_reset_test",
+    srcs = ["target_reset_test.cc"],
+    deps = [
+        ":host_cmd",
+        ":target_reset",
+        "//protocol/test:libhoth_device_mock",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
 )
 
 cc_library(
