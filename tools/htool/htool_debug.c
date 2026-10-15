@@ -16,8 +16,8 @@
 
 #include <stdio.h>
 
-#include "host_commands.h"
 #include "htool_target_control.h"
+#include "protocol/target_control.h"
 int htool_target_debug_enable(const struct htool_invocation* inv) {
   (void)inv;
   struct hoth_response_target_control response;

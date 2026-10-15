@@ -17,7 +17,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "host_commands.h"
 #include "htool.h"
 #include "protocol/host_cmd.h"
 #include "tools/common/htool_cmd.h"

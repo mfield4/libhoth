@@ -29,7 +29,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "host_commands.h"
 #include "htool_authz_command.h"
 #include "htool_console.h"
 #include "htool_debug.h"
@@ -64,6 +63,7 @@
 #include "protocol/controlled_storage.h"
 #include "protocol/gpio_drive_strength.h"
 #include "protocol/hello.h"
+#include "protocol/host_cmd.h"
 #include "protocol/opentitan_version.h"
 #include "protocol/progress.h"
 #include "protocol/reboot.h"
@@ -71,6 +71,7 @@
 #include "protocol/spi_passthrough.h"
 #include "protocol/spi_proxy.h"
 #include "protocol/srtm.h"
+#include "protocol/target_control.h"
 #include "protocol/target_reset.h"
 #include "protocol/target_watchdog.h"
 #include "protocol/util.h"

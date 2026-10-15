@@ -26,7 +26,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "host_commands.h"
 #include "htool.h"
 #include "protocol/mauv.h"
 #include "protocol/payload_info.h"

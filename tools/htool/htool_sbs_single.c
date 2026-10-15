@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "host_commands.h"
 #include "htool_target_control.h"
+#include "protocol/target_control.h"
 #include "tools/common/htool_cmd.h"
 
 const char* sbs_single_status_str(uint16_t status);
