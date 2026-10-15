@@ -28,10 +28,10 @@ extern "C" {
 struct libhoth_device;
 
 libhoth_error htool_console_run(struct libhoth_device* dev,
-                                const struct libhoth_htool_console_opts* opts);
+                                const struct libhoth_console_opts* opts);
 
-libhoth_error htool_console_snapshot(
-    struct libhoth_device* dev, const struct libhoth_htool_console_opts* opts);
+libhoth_error htool_console_snapshot(struct libhoth_device* dev,
+                                     const struct libhoth_console_opts* opts);
 
 #ifdef __cplusplus
 }

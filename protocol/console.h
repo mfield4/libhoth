@@ -119,7 +119,10 @@ struct hoth_channel_uart_config_set_req {
   struct hoth_channel_uart_config config;
 } __attribute__((packed, aligned(4)));
 
-struct libhoth_htool_console_opts {
+// Deprecated: old name kept for source compatibility.
+#define libhoth_htool_console_opts libhoth_console_opts
+
+struct libhoth_console_opts {
   uint32_t channel_id;
   bool force_drive_tx;
   bool history;
@@ -133,7 +136,7 @@ struct libhoth_htool_console_opts {
 void libhoth_print_erot_console(struct libhoth_device* const dev);
 
 libhoth_error libhoth_get_channel_status(
-    struct libhoth_device* dev, const struct libhoth_htool_console_opts* opts,
+    struct libhoth_device* dev, const struct libhoth_console_opts* opts,
     uint32_t* offset);
 
 libhoth_error libhoth_read_console(struct libhoth_device* dev, int fd,
@@ -144,13 +147,13 @@ libhoth_error libhoth_write_console(struct libhoth_device* dev,
                                     uint32_t channel_id, bool force_drive_tx,
                                     bool* quit);
 
-libhoth_error libhoth_get_uart_config(
-    struct libhoth_device* dev, const struct libhoth_htool_console_opts* opts,
-    struct hoth_channel_uart_config* resp);
+libhoth_error libhoth_get_uart_config(struct libhoth_device* dev,
+                                      const struct libhoth_console_opts* opts,
+                                      struct hoth_channel_uart_config* resp);
 
-libhoth_error libhoth_set_uart_config(
-    struct libhoth_device* dev, const struct libhoth_htool_console_opts* opts,
-    struct hoth_channel_uart_config* config);
+libhoth_error libhoth_set_uart_config(struct libhoth_device* dev,
+                                      const struct libhoth_console_opts* opts,
+                                      struct hoth_channel_uart_config* config);
 
 #define HOTH_CMD_CONSOLE_REQUEST 0x0097
 #define HOTH_CMD_CONSOLE_READ 0x0098

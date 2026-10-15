@@ -34,7 +34,7 @@ const char kAnsiReset[] = "\033[0m";
 const char kAnsiRed[] = "\033[31m";
 
 static bool set_raw_terminal(int fd, struct termios* old_termios,
-                             const struct libhoth_htool_console_opts* opts) {
+                             const struct libhoth_console_opts* opts) {
   struct termios new_termios;
   if (tcgetattr(fd, old_termios) < 0) {
     return false;
@@ -62,7 +62,7 @@ void restore_terminal(int fd, const struct termios* old_termios) {
 }
 
 libhoth_error htool_console_run(struct libhoth_device* dev,
-                                const struct libhoth_htool_console_opts* opts) {
+                                const struct libhoth_console_opts* opts) {
   printf("%sStarting Interactive Console\n", kAnsiRed);
 
   struct hoth_channel_uart_config uart_config = {};
@@ -149,8 +149,8 @@ libhoth_error htool_console_run(struct libhoth_device* dev,
   return status;
 }
 
-libhoth_error htool_console_snapshot(
-    struct libhoth_device* dev, const struct libhoth_htool_console_opts* opts) {
+libhoth_error htool_console_snapshot(struct libhoth_device* dev,
+                                     const struct libhoth_console_opts* opts) {
   // Legacy host commands for console snapshot.
   if (!opts->channel_id) {
     return libhoth_console_snapshot_legacy(dev, stdout);
