@@ -30,8 +30,6 @@
 #include "htool_console.h"
 #include "transports/libhoth_device.h"
 
-#define MAILBOX_SIZE 1024
-
 const char kAnsiReset[] = "\033[0m";
 const char kAnsiRed[] = "\033[31m";
 
@@ -151,43 +149,11 @@ libhoth_error htool_console_run(struct libhoth_device* dev,
   return status;
 }
 
-libhoth_error htool_console_snapshot_legacy(struct libhoth_device* dev) {
-  size_t response_bytes_written;
-  libhoth_error status =
-      libhoth_hostcmd_exec_v2(dev, HOTH_CMD_CONSOLE_REQUEST, 0, NULL, 0, NULL,
-                              0, &response_bytes_written);
-  if (status != HOTH_SUCCESS) {
-    fprintf(stderr, "HOTH_CMD_CONSOLE_REQUEST status: 0x%016llx\n",
-            (unsigned long long)status);
-    return status;
-  }
-
-  struct hoth_params_console_read_v1 read_request = {.subcmd =
-                                                         CONSOLE_READ_NEXT};
-  const size_t max_bytes_per_read =
-      MAILBOX_SIZE - sizeof(struct hoth_host_response);
-  while (true) {
-    char buf[MAILBOX_SIZE];
-    status = libhoth_hostcmd_exec_v2(
-        dev, HOTH_CMD_CONSOLE_READ, 0, &read_request, sizeof(read_request), buf,
-        max_bytes_per_read, &response_bytes_written);
-    if (status != HOTH_SUCCESS) {
-      fprintf(stderr, "HOTH_CMD_CONSOLE_READ status: 0x%016llx\n",
-              (unsigned long long)status);
-      return status;
-    }
-    fwrite(buf, strnlen(buf, sizeof(buf)), 1, stdout);
-    if (response_bytes_written < max_bytes_per_read) break;
-  }
-  printf("\n");
-  return status;
-}
-
 libhoth_error htool_console_snapshot(
     struct libhoth_device* dev, const struct libhoth_htool_console_opts* opts) {
   // Legacy host commands for console snapshot.
   if (!opts->channel_id) {
-    return htool_console_snapshot_legacy(dev);
+    return libhoth_console_snapshot_legacy(dev, stdout);
   }
   // Modern host commands similar to htool_console_run.
   // Starting from current_offset - 0x80000000 so it's guaranteed to be outside
