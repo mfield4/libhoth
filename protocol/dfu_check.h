@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBHOTH_EXAMPLES_HTOOL_DFU_CHECK_H_
-#define LIBHOTH_EXAMPLES_HTOOL_DFU_CHECK_H_
+#ifndef LIBHOTH_PROTOCOL_DFU_CHECK_H_
+#define LIBHOTH_PROTOCOL_DFU_CHECK_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -41,4 +41,4 @@ void libhoth_print_dfu_error(struct libhoth_device* const dev,
 }
 #endif
 
-#endif  // LIBHOTH_EXAMPLES_HTOOL_DFU_CHECKH_
+#endif  // LIBHOTH_PROTOCOL_DFU_CHECK_H_
