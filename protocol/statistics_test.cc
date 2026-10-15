@@ -56,3 +56,27 @@ TEST_F(LibHothTest, statistics_null_param_test) {
   EXPECT_EQ(LIBHOTH_ERR_GET_SPACE(err), HOTH_HOST_SPACE_LIBHOTH);
   EXPECT_EQ(LIBHOTH_ERR_GET_CODE(err), LIBHOTH_ERR_INVALID_PARAMETER);
 }
+
+TEST(StatisticsStringsTest, FirmwareUpdateFailureReason) {
+  EXPECT_STREQ(libhoth_firmware_update_failure_reason_string(
+                   FIRMWARE_UPDATE_MIRROR_RW_FAILED),
+               "FIRMWARE_UPDATE_MIRROR_RW_FAILED");
+  EXPECT_STREQ(libhoth_firmware_update_failure_reason_string(0xffff),
+               "Invalid Status Code");
+}
+
+TEST(StatisticsStringsTest, PayloadUpdateFailureReason) {
+  EXPECT_STREQ(
+      libhoth_payload_update_failure_reason_string(PAYLOAD_UPDATE_SUCCESS),
+      "SUCCESS");
+  EXPECT_STREQ(
+      libhoth_payload_update_failure_reason_string(PAYLOAD_UPDATE_WRITE_FAILED),
+      "PAYLOAD_UPDATE_WRITE_FAILED");
+  EXPECT_STREQ(libhoth_payload_update_failure_reason_string(0xffff),
+               "Invalid Status Code");
+}
+
+TEST(StatisticsStringsTest, ResetFlagValues) {
+  EXPECT_EQ(static_cast<uint32_t>(kResetFlagOther), 1u << 0);
+  EXPECT_EQ(static_cast<uint32_t>(kResetFlagApWatchdog), 1u << 18);
+}
