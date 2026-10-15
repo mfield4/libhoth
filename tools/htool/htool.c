@@ -671,7 +671,7 @@ int htool_external_usb_host_check_presence(const struct htool_invocation* inv) {
   }
 
   struct hoth_response_target_control response = {0};
-  const int action_status = target_control_perform_action(
+  const int action_status = htool_target_control_perform_action(
       HOTH_TARGET_DETECT_EXTERNAL_USB_HOST_PRESENCE,
       HOTH_TARGET_CONTROL_ACTION_GET_STATUS, &response);
   if (action_status != 0) {

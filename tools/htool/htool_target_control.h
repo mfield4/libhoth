@@ -16,12 +16,14 @@
 #ifndef LIBHOTH_TOOLS_HTOOL_HTOOL_TARGET_CONTROL_H_
 #define LIBHOTH_TOOLS_HTOOL_HTOOL_TARGET_CONTROL_H_
 
-#include "host_commands.h"
+#include "protocol/target_control.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int target_control_perform_action(
+// Runs libhoth_target_control() on the device selected by --transport and
+// explains common failures on stderr. Returns 0 on success, -1 on failure.
+int htool_target_control_perform_action(
     enum hoth_target_control_function function,
     enum hoth_target_control_action action,
     struct hoth_response_target_control* response);

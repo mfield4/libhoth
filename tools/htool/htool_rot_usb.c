@@ -43,8 +43,8 @@ static const char* rot_usb_muxctrl_status_str_map(
 
 int htool_rot_usb_muxctrl_get(const struct htool_invocation* inv) {
   struct hoth_response_target_control response;
-  int ret = target_control_perform_action(HOTH_TARGET_CONTROL_GENERIC_MUX,
-                                          ROT_USB_ACTION_GET, &response);
+  int ret = htool_target_control_perform_action(HOTH_TARGET_CONTROL_GENERIC_MUX,
+                                                ROT_USB_ACTION_GET, &response);
   if (ret != 0) {
     return ret;
   }
@@ -58,15 +58,15 @@ int rot_usb_mux_control_change_select(
     const enum hoth_target_control_action action) {
   struct hoth_response_target_control response;
 
-  int ret = target_control_perform_action(HOTH_TARGET_CONTROL_GENERIC_MUX,
-                                          action, &response);
+  int ret = htool_target_control_perform_action(HOTH_TARGET_CONTROL_GENERIC_MUX,
+                                                action, &response);
   if (ret != 0) {
     return ret;
   }
   const enum hoth_target_control_status old_status = response.status;
 
-  ret = target_control_perform_action(HOTH_TARGET_CONTROL_GENERIC_MUX,
-                                      ROT_USB_ACTION_GET, &response);
+  ret = htool_target_control_perform_action(HOTH_TARGET_CONTROL_GENERIC_MUX,
+                                            ROT_USB_ACTION_GET, &response);
   if (ret != 0) {
     return ret;
   }

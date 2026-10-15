@@ -17,64 +17,41 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "host_commands.h"
 #include "htool.h"
+#include "protocol/host_cmd.h"
+#include "protocol/target_control.h"
 
-int target_control_perform_action(
+int htool_target_control_perform_action(
     const enum hoth_target_control_function function,
     const enum hoth_target_control_action action,
     struct hoth_response_target_control* const response) {
-  if (response == NULL) {
-    return -1;
-  }
-
   struct libhoth_device* dev = htool_libhoth_device();
   if (!dev) {
     return -1;
   }
 
-  const struct hoth_request_target_control request = {
-      .function = function,
-      .action = action,
-  };
-
-  size_t response_length = 0;
-  int ret = libhoth_hostcmd_exec(
-      dev, HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_HOTH_TARGET_CONTROL,
-      /*version=*/0, &request, sizeof(request), response, sizeof(*response),
-      &response_length);
-
-  if (ret != 0) {
-    fprintf(stderr, "HOTH_TARGET_CONTROL error code: %d\n", ret);
-    switch (ret) {
-      case (HTOOL_ERROR_HOST_COMMAND_START + HOTH_RES_INVALID_COMMAND):
-        fprintf(stderr,
-                "Command not supported, or requested action is forbidden on "
-                "function. Please confirm if the RoT FW version supports this "
-                "command, and requested action is allowed on the function\n");
-        break;
-      case (HTOOL_ERROR_HOST_COMMAND_START + HOTH_RES_INVALID_PARAM):
-        fprintf(stderr,
-                "Invalid function or action. Please confirm if the RoT "
-                "firmware version supports the given function, and action on "
-                "that function is correct\n");
-        break;
-      case (HTOOL_ERROR_HOST_COMMAND_START + HOTH_RES_ACCESS_DENIED):
-        fprintf(stderr,
-                "Not authorized to perform requested action on function. "
-                "Please use `authz_host_command` commands to authorize RoT to "
-                "perform requested action on function\n");
-        break;
-    }
-    return -1;
+  int ret = libhoth_target_control(dev, function, action, response);
+  switch (ret) {
+    case 0:
+      return 0;
+    case (HTOOL_ERROR_HOST_COMMAND_START + HOTH_RES_INVALID_COMMAND):
+      fprintf(stderr,
+              "Command not supported, or requested action is forbidden on "
+              "function. Please confirm if the RoT FW version supports this "
+              "command, and requested action is allowed on the function\n");
+      break;
+    case (HTOOL_ERROR_HOST_COMMAND_START + HOTH_RES_INVALID_PARAM):
+      fprintf(stderr,
+              "Invalid function or action. Please confirm if the RoT "
+              "firmware version supports the given function, and action on "
+              "that function is correct\n");
+      break;
+    case (HTOOL_ERROR_HOST_COMMAND_START + HOTH_RES_ACCESS_DENIED):
+      fprintf(stderr,
+              "Not authorized to perform requested action on function. "
+              "Please use `authz_host_command` commands to authorize RoT to "
+              "perform requested action on function\n");
+      break;
   }
-  if (response_length != sizeof(*response)) {
-    fprintf(
-        stderr,
-        "HOTH_TARGET_CONTROL expected exactly %zu response bytes, got %zu\n",
-        sizeof(*response), response_length);
-    return -1;
-  }
-
-  return 0;
+  return -1;
 }

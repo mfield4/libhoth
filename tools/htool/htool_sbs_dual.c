@@ -12,8 +12,8 @@ const char* sbs_dual_status_str(uint16_t status);
 
 static int sbs_dual_perform_action(enum hoth_target_control_action action) {
   struct hoth_response_target_control response;
-  int ret = target_control_perform_action(HOTH_TARGET_CONTROL_SBS_MUX_DUAL,
-                                          action, &response);
+  int ret = htool_target_control_perform_action(
+      HOTH_TARGET_CONTROL_SBS_MUX_DUAL, action, &response);
   if (ret) {
     return ret;
   }
@@ -23,9 +23,9 @@ static int sbs_dual_perform_action(enum hoth_target_control_action action) {
 
 static int sbs_dual_get_status(void) {
   struct hoth_response_target_control response;
-  int ret = target_control_perform_action(HOTH_TARGET_CONTROL_SBS_MUX_DUAL,
-                                          HOTH_TARGET_CONTROL_ACTION_GET_STATUS,
-                                          &response);
+  int ret = htool_target_control_perform_action(
+      HOTH_TARGET_CONTROL_SBS_MUX_DUAL, HOTH_TARGET_CONTROL_ACTION_GET_STATUS,
+      &response);
   if (ret) {
     return ret;
   }

@@ -779,7 +779,24 @@ cc_test(
 
 cc_library(
     name = "target_control",
+    srcs = ["target_control.c"],
     hdrs = ["target_control.h"],
+    deps = [
+        ":host_cmd",
+        "//transports:libhoth_device",
+    ],
+)
+
+cc_test(
+    name = "target_control_test",
+    srcs = ["target_control_test.cc"],
+    deps = [
+        ":host_cmd",
+        ":target_control",
+        "//protocol/test:libhoth_device_mock",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
 )
 
 cc_library(

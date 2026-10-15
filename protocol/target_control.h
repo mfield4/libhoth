@@ -17,6 +17,8 @@
 
 #include <stdint.h>
 
+#include "transports/libhoth_device.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -102,6 +104,15 @@ struct hoth_response_target_control {
   // Must be hoth_target_control_status
   uint16_t status;
 } __attribute__((packed, aligned(4)));
+
+// Performs `action` on target control `function` and stores the result in
+// `response`. Returns 0 on success, the libhoth_hostcmd_exec() error code if
+// the host command fails, or -1 if `response` is NULL or the response has the
+// wrong size. Failures are reported on stderr.
+int libhoth_target_control(struct libhoth_device* dev,
+                           enum hoth_target_control_function function,
+                           enum hoth_target_control_action action,
+                           struct hoth_response_target_control* response);
 
 #ifdef __cplusplus
 }

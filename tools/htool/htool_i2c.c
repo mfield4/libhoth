@@ -235,8 +235,8 @@ static const char* i2c_muxctrl_status_str_map(
 
 int htool_i2c_muxctrl_get(const struct htool_invocation* inv) {
   struct hoth_response_target_control response;
-  int ret = target_control_perform_action(HOTH_TARGET_CONTROL_I2C_MUX,
-                                          I2C_MUXCTRL_ACTION_GET, &response);
+  int ret = htool_target_control_perform_action(
+      HOTH_TARGET_CONTROL_I2C_MUX, I2C_MUXCTRL_ACTION_GET, &response);
   if (ret != 0) {
     return ret;
   }
@@ -249,15 +249,15 @@ int htool_i2c_muxctrl_get(const struct htool_invocation* inv) {
 static int i2c_mux_control_change_select(
     const enum hoth_target_control_action action) {
   struct hoth_response_target_control response;
-  int ret = target_control_perform_action(HOTH_TARGET_CONTROL_I2C_MUX, action,
-                                          &response);
+  int ret = htool_target_control_perform_action(HOTH_TARGET_CONTROL_I2C_MUX,
+                                                action, &response);
   if (ret != 0) {
     return ret;
   }
   const enum hoth_target_control_status old_status = response.status;
 
-  ret = target_control_perform_action(HOTH_TARGET_CONTROL_I2C_MUX,
-                                      I2C_MUXCTRL_ACTION_GET, &response);
+  ret = htool_target_control_perform_action(HOTH_TARGET_CONTROL_I2C_MUX,
+                                            I2C_MUXCTRL_ACTION_GET, &response);
   if (ret != 0) {
     return ret;
   }

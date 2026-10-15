@@ -35,6 +35,7 @@ protocol_srcs = [
     'target_reset.c',
     'spi_passthrough.c',
     'srtm.c',
+    'target_control.c',
 ]
 
 incdir = libhoth_include_dirs
