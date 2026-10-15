@@ -21,8 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "git_version.h"
-
 static int matches_verbs(const char* const* verbs, int argc,
                          const char* const* argv) {
   for (int i = 0; i < argc; i++) {
@@ -463,7 +461,7 @@ static struct htool_invocation global_flags_inv = {};
 struct htool_invocation* htool_global_flags(void) { return &global_flags_inv; }
 
 int htool_main(const struct htool_param* global_flags,
-               const struct htool_cmd* cmds, int argc,
+               const struct htool_cmd* cmds, const char* version, int argc,
                const char* const* argv) {
   static struct htool_cmd global_flags_cmd;
   global_flags_cmd = (struct htool_cmd){
@@ -483,7 +481,7 @@ int htool_main(const struct htool_param* global_flags,
   }
 
   if (print_version) {
-    printf("%s\n", STABLE_GIT_COMMIT);
+    printf("%s\n", version);
     return 0;
   }
 

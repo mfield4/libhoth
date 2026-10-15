@@ -76,8 +76,11 @@ int htool_get_param_u32_or_fourcc(const struct htool_invocation* inv,
 
 struct htool_invocation* htool_global_flags(void);
 
+// Parses global flags, dispatches to the matching command in `cmds`, and
+// returns its result. `version` is printed by --version.
 int htool_main(const struct htool_param* global_flags,
-               const struct htool_cmd* cmds, int argc, const char* const* argv);
+               const struct htool_cmd* cmds, const char* version, int argc,
+               const char* const* argv);
 
 // Helper function to parse time string with units (s, ms, us) into microseconds
 // Returns -1 on error.

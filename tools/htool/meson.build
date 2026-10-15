@@ -7,7 +7,7 @@ git_version_h = vcs_tag(
 )
 
 incdir = libhoth_include_dirs
-link_with = [libhoth.get_static_lib()]
+link_with = [libhoth.get_static_lib(), libhoth_cli]
 c_args = []
 
 if get_option('dbus_backend')
@@ -20,7 +20,6 @@ executable(
     sources: [
         'htool.c',
         'htool_authz_command.c',
-        '../common/htool_cmd.c',
         'htool_console.c',
         'htool_dbus.c',
         'htool_debug.c',
