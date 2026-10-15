@@ -16,37 +16,14 @@
 
 #include <stdint.h>
 
+#include "protocol/security_info.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // Forward declaration
 struct htool_invocation;
-
-#define HOTH_INFO_FW_MINOR_VERSION_SIZE 32
-
-struct hoth_info_id_v0 {
-  uint64_t hardware_id;
-  uint16_t hardware_category;
-  uint8_t reserved_0[2];
-} __attribute__((packed));
-
-struct hoth_info_id_v1 {
-  struct hoth_info_id_v0 id;
-  uint32_t bootloader_tag;
-  uint32_t fw_epoch;
-  uint16_t fw_major_version;
-  uint8_t reserved_0[2];
-} __attribute__((packed));
-
-struct hoth_info {
-  struct hoth_info_id_v1 id;
-  uint16_t fw_minor_version;
-  uint8_t signature_version;
-  uint8_t wrapper_version;
-  uint16_t inbound_mailbox_size;
-  uint16_t outbound_mailbox_size;
-} __attribute__((packed));
 
 // Retrieve the Info from firmware.
 int htool_info(const struct htool_invocation* inv);

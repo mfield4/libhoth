@@ -38,6 +38,7 @@ protocol_srcs = [
     'target_control.c',
     'authz_command.c',
     'tpm.c',
+    'security_info.c',
 ]
 
 incdir = libhoth_include_dirs
