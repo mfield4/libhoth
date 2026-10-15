@@ -47,7 +47,7 @@ TEST_F(LibHothTest, response_failure_legacy) {
   size_t out_resp_size;
   EXPECT_EQ(libhoth_hostcmd_exec(&hoth_dev_, kCmd, 0, nullptr, 0, resp_buf,
                                  sizeof(resp_buf), &out_resp_size),
-            HTOOL_ERROR_HOST_COMMAND_START + 2);
+            LIBHOTH_ERROR_HOST_COMMAND_START + 2);
 }
 
 TEST_F(LibHothTest, response_failure_extended) {

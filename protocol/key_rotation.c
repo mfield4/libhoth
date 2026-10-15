@@ -190,7 +190,7 @@ libhoth_error libhoth_key_rotation_update(struct libhoth_device* dev,
       send_key_rotation_request(dev, KEY_ROTATION_RECORD_INITIATE);
   if (init_err != HOTH_SUCCESS) {
     fprintf(stderr, "Failed to initiate key rotation.\n");
-    return HTOOL_CMD_INITIATE_FAIL;
+    return LIBHOTH_CMD_INITIATE_FAIL;
   }
   fprintf(stderr, "Writing the image to hoth.\n");
   struct hoth_request_variable_length request;
@@ -229,7 +229,7 @@ libhoth_error libhoth_key_rotation_update(struct libhoth_device* dev,
       send_key_rotation_request(dev, KEY_ROTATION_RECORD_COMMIT);
   if (commit_err != HOTH_SUCCESS) {
     fprintf(stderr, "Failed to commit key rotation.\n");
-    return HTOOL_CMD_COMMIT_FAIL;
+    return LIBHOTH_CMD_COMMIT_FAIL;
   }
   return HOTH_SUCCESS;
 }

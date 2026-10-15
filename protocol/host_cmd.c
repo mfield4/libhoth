@@ -186,7 +186,7 @@ int libhoth_hostcmd_exec(struct libhoth_device* dev, uint16_t command,
   uint32_t code = LIBHOTH_ERR_GET_CODE(err);
 
   if (space == HOTH_HOST_SPACE_EC) {
-    return HTOOL_ERROR_HOST_COMMAND_START + code;
+    return LIBHOTH_ERROR_HOST_COMMAND_START + code;
   }
 
   if (space == HOTH_HOST_SPACE_PIEROT_ERR) {
