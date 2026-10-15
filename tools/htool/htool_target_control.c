@@ -34,19 +34,19 @@ int htool_target_control_perform_action(
   switch (ret) {
     case 0:
       return 0;
-    case (HTOOL_ERROR_HOST_COMMAND_START + HOTH_RES_INVALID_COMMAND):
+    case (LIBHOTH_ERROR_HOST_COMMAND_START + HOTH_RES_INVALID_COMMAND):
       fprintf(stderr,
               "Command not supported, or requested action is forbidden on "
               "function. Please confirm if the RoT FW version supports this "
               "command, and requested action is allowed on the function\n");
       break;
-    case (HTOOL_ERROR_HOST_COMMAND_START + HOTH_RES_INVALID_PARAM):
+    case (LIBHOTH_ERROR_HOST_COMMAND_START + HOTH_RES_INVALID_PARAM):
       fprintf(stderr,
               "Invalid function or action. Please confirm if the RoT "
               "firmware version supports the given function, and action on "
               "that function is correct\n");
       break;
-    case (HTOOL_ERROR_HOST_COMMAND_START + HOTH_RES_ACCESS_DENIED):
+    case (LIBHOTH_ERROR_HOST_COMMAND_START + HOTH_RES_ACCESS_DENIED):
       fprintf(stderr,
               "Not authorized to perform requested action on function. "
               "Please use `authz_host_command` commands to authorize RoT to "

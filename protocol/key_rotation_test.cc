@@ -360,7 +360,7 @@ TEST_F(LibHothTest, key_rotation_update_initiate_failure) {
   EXPECT_CALL(mock_, receive).WillOnce(Return(-1));
 
   EXPECT_EQ(libhoth_key_rotation_update(&hoth_dev_, &data[0], sizeof(data)),
-            HTOOL_CMD_INITIATE_FAIL);
+            LIBHOTH_CMD_INITIATE_FAIL);
 }
 
 TEST_F(LibHothTest, key_rotation_update_commit_failure) {
@@ -372,7 +372,7 @@ TEST_F(LibHothTest, key_rotation_update_commit_failure) {
       .WillOnce(DoAll(CopyResp(&kDummy, 0), Return(LIBHOTH_OK)))
       .WillOnce(DoAll(CopyResp(&kDummy, 0), Return(-1)));
   EXPECT_EQ(libhoth_key_rotation_update(&hoth_dev_, &data[0], sizeof(data)),
-            HTOOL_CMD_COMMIT_FAIL);
+            LIBHOTH_CMD_COMMIT_FAIL);
 }
 
 TEST_F(LibHothTest, key_rotation_update_failure_invalid_size_too_large) {

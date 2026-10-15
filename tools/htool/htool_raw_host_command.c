@@ -128,11 +128,11 @@ int command_raw_host_command(const struct htool_invocation* inv) {
     rv = libhoth_hostcmd_exec(dev, req.command, req.command_version,
                               req_payload, req.data_len, resp_payload,
                               RESP_BUF_LEN, &actual_resp_size);
-    if (rv && rv < HTOOL_ERROR_HOST_COMMAND_START) {
+    if (rv && rv < LIBHOTH_ERROR_HOST_COMMAND_START) {
       return rv;
     }
-    if (rv > HTOOL_ERROR_HOST_COMMAND_START) {
-      resp.result = rv - HTOOL_ERROR_HOST_COMMAND_START;
+    if (rv > LIBHOTH_ERROR_HOST_COMMAND_START) {
+      resp.result = rv - LIBHOTH_ERROR_HOST_COMMAND_START;
     }
 
     resp.data_len = actual_resp_size;
