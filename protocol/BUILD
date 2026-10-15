@@ -757,7 +757,24 @@ cc_test(
 
 cc_library(
     name = "srtm",
+    srcs = ["srtm.c"],
     hdrs = ["srtm.h"],
+    deps = [
+        ":host_cmd",
+        "//transports:libhoth_device",
+    ],
+)
+
+cc_test(
+    name = "srtm_test",
+    srcs = ["srtm_test.cc"],
+    deps = [
+        ":host_cmd",
+        ":srtm",
+        "//protocol/test:libhoth_device_mock",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
 )
 
 cc_library(

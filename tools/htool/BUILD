@@ -21,15 +21,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "srtm",
-    srcs = ["htool_srtm.c"],
-    hdrs = ["htool_srtm.h"],
-    deps = [
-        ":host_commands",
-    ],
-)
-
 config_setting(
     name = "dbus_backend",
     define_values = {
@@ -185,7 +176,6 @@ cc_library(
         ":htool_security_certificates",
         ":htool_security_tokens",
         ":htool_target_watchdog",
-        ":srtm",
         "//protocol:authz_record",
         "//protocol:chipinfo",
         "//protocol:console",
@@ -215,6 +205,7 @@ cc_library(
         "//protocol:security_version",
         "//protocol:spi_passthrough",
         "//protocol:spi_proxy",
+        "//protocol:srtm",
         "//protocol:statistics",
         "//protocol:target_reset",
         "//protocol:target_watchdog",

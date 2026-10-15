@@ -17,6 +17,8 @@
 
 #include <stdint.h>
 
+#include "transports/libhoth_device.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,6 +33,17 @@ struct hoth_srtm_request {
   uint16_t data_size;
   uint8_t data[SRTM_DATA_MAX_SIZE_BYTES];
 } __attribute__((packed, aligned(4)));
+
+// Populates `request` from `measurement`, a hex string of at most
+// SRTM_DATA_MAX_SIZE_BYTES bytes. Prints the reason to stderr and returns -1
+// if the string is invalid.
+int libhoth_srtm_request_from_hex(struct hoth_srtm_request* request,
+                                  const char* measurement);
+
+// Pushes the measurement in `request` into PCR0. Returns 0 on success, or the
+// libhoth_hostcmd_exec() error code.
+int libhoth_srtm(struct libhoth_device* dev,
+                 const struct hoth_srtm_request* request);
 
 #ifdef __cplusplus
 }

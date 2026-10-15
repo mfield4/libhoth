@@ -51,7 +51,6 @@
 #include "htool_security_certificates.h"
 #include "htool_security_info.h"
 #include "htool_security_tokens.h"
-#include "htool_srtm.h"
 #include "htool_statistics.h"
 #include "htool_target_control.h"
 #include "htool_target_watchdog.h"
@@ -70,6 +69,7 @@
 #include "protocol/rot_firmware_version.h"
 #include "protocol/spi_passthrough.h"
 #include "protocol/spi_proxy.h"
+#include "protocol/srtm.h"
 #include "protocol/target_reset.h"
 #include "protocol/target_watchdog.h"
 #include "protocol/util.h"
@@ -648,13 +648,11 @@ static int command_srtm(const struct htool_invocation* inv) {
   }
 
   struct hoth_srtm_request request = {0};
-  if (srtm_request_from_hex_measurement(&request, measurement) != 0) {
+  if (libhoth_srtm_request_from_hex(&request, measurement) != 0) {
     return -1;
   }
 
-  return libhoth_hostcmd_exec(
-      dev, HOTH_CMD_BOARD_SPECIFIC_BASE + HOTH_PRV_CMD_HOTH_SRTM,
-      /*version=*/0, &request, sizeof(request), NULL, 0, NULL);
+  return libhoth_srtm(dev, &request);
 }
 
 int htool_tpm_spi_probe(const struct htool_invocation* inv) {
