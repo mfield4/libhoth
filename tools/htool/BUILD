@@ -210,6 +210,7 @@ cc_library(
         "//protocol:spi_proxy",
         "//protocol:srtm",
         "//protocol:statistics",
+        "//protocol:target_control",
         "//protocol:target_reset",
         "//protocol:target_watchdog",
         "//protocol:update_session",

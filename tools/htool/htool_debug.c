@@ -21,7 +21,7 @@
 int htool_target_debug_enable(const struct htool_invocation* inv) {
   (void)inv;
   struct hoth_response_target_control response;
-  int ret = target_control_perform_action(
+  int ret = htool_target_control_perform_action(
       HOTH_TARGET_CONTROL_DEBUG, HOTH_TARGET_CONTROL_ACTION_ENABLE, &response);
   if (ret != 0) {
     return ret;
@@ -32,7 +32,7 @@ int htool_target_debug_enable(const struct htool_invocation* inv) {
 int htool_target_debug_disable(const struct htool_invocation* inv) {
   (void)inv;
   struct hoth_response_target_control response;
-  int ret = target_control_perform_action(
+  int ret = htool_target_control_perform_action(
       HOTH_TARGET_CONTROL_DEBUG, HOTH_TARGET_CONTROL_ACTION_DISABLE, &response);
   if (ret != 0) {
     return ret;
@@ -43,9 +43,9 @@ int htool_target_debug_disable(const struct htool_invocation* inv) {
 int htool_target_debug_get(const struct htool_invocation* inv) {
   (void)inv;
   struct hoth_response_target_control response;
-  int ret = target_control_perform_action(HOTH_TARGET_CONTROL_DEBUG,
-                                          HOTH_TARGET_CONTROL_ACTION_GET_STATUS,
-                                          &response);
+  int ret = htool_target_control_perform_action(
+      HOTH_TARGET_CONTROL_DEBUG, HOTH_TARGET_CONTROL_ACTION_GET_STATUS,
+      &response);
   if (ret != 0) {
     return ret;
   }
