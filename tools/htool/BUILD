@@ -211,6 +211,7 @@ cc_library(
         "//protocol:target_control",
         "//protocol:target_reset",
         "//protocol:target_watchdog",
+        "//protocol:tpm",
         "//protocol:update_session",
         "//protocol:util",
         "//tools/common:htool_cmd",

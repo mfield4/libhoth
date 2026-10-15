@@ -37,6 +37,7 @@ protocol_srcs = [
     'srtm.c',
     'target_control.c',
     'authz_command.c',
+    'tpm.c',
 ]
 
 incdir = libhoth_include_dirs
