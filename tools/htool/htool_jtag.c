@@ -19,7 +19,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "host_commands.h"
 #include "htool.h"
 #include "protocol/host_cmd.h"
 #include "protocol/jtag.h"

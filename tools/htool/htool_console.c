@@ -25,9 +25,9 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include "host_commands.h"
 #include "htool.h"
 #include "htool_console.h"
+#include "protocol/console.h"
 #include "transports/libhoth_device.h"
 
 const char kAnsiReset[] = "\033[0m";

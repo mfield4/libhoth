@@ -18,7 +18,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "host_commands.h"
 #include "htool.h"
 #include "protocol/statistics.h"
 

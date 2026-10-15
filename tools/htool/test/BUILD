@@ -11,7 +11,6 @@ cc_library(
         "//protocol:security_version",
         "//protocol/test:libhoth_device_mock",
         "//tools/common:htool_cmd",
-        "//tools/htool:host_commands",
         "//tools/htool:htool_header",
         "//transports:libhoth_device",
         "@googletest//:gtest",

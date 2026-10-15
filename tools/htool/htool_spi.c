@@ -19,7 +19,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "host_commands.h"
 #include "htool.h"
 #include "tools/common/htool_cmd.h"
 #include "transports/libhoth_spi.h"

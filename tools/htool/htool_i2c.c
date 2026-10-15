@@ -20,10 +20,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "host_commands.h"
 #include "htool.h"
 #include "htool_target_control.h"
 #include "protocol/i2c.h"
+#include "protocol/target_control.h"
 #include "tools/common/htool_cmd.h"
 
 static int i2c_detect(struct libhoth_device* dev,

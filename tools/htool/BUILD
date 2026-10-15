@@ -7,23 +7,6 @@ package(default_visibility = ["//visibility:public"])
 # For the //examples:htool compatibility binary.
 exports_files(["main.c"])
 
-cc_library(
-    name = "host_commands",
-    textual_hdrs = [
-        "host_commands.h",
-    ],
-    deps = [
-        "//protocol:authz_command",
-        "//protocol:console",
-        "//protocol:host_cmd",
-        "//protocol:security_v2",
-        "//protocol:spi_passthrough",
-        "//protocol:srtm",
-        "//protocol:target_control",
-        "//protocol:target_reset",
-    ],
-)
-
 config_setting(
     name = "dbus_backend",
     define_values = {
@@ -58,7 +41,6 @@ cc_library(
     srcs = ["htool_security_certificates.c"],
     hdrs = ["htool_security_certificates.h"],
     deps = [
-        ":host_commands",
         ":htool_header",
         "//protocol:host_cmd",
         "//protocol:security_v2",
@@ -73,7 +55,6 @@ cc_library(
     srcs = ["htool_security_tokens.c"],
     hdrs = ["htool_security_tokens.h"],
     deps = [
-        ":host_commands",
         ":htool_header",
         "//protocol:host_cmd",
         "//protocol:security_v2",
@@ -171,7 +152,6 @@ cc_library(
     ],
     hdrs = ["htool.h"],
     deps = [
-        ":host_commands",
         ":htool_header",
         ":htool_provisioning",
         ":htool_security_certificates",
@@ -257,9 +237,9 @@ cc_test(
     name = "htool_provisioning_test",
     srcs = ["htool_provisioning_test.cc"],
     deps = [
-        ":host_commands",
         ":htool_provisioning",
         "//protocol:host_cmd",
+        "//protocol:security_v2",
         "//protocol/test:libhoth_device_mock",
         "//tools/common:htool_cmd",
         "//tools/htool/test:test_util",

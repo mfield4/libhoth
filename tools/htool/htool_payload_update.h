@@ -15,7 +15,6 @@
 #ifndef LIBHOTH_TOOLS_HTOOL_HTOOL_PAYLOAD_UPDATE_H_
 #define LIBHOTH_TOOLS_HTOOL_HTOOL_PAYLOAD_UPDATE_H_
 
-#include "host_commands.h"
 #include "htool.h"
 
 #ifdef __cplusplus
