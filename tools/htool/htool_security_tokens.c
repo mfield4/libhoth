@@ -10,8 +10,8 @@
 
 #include "host_commands.h"
 #include "htool.h"
-#include "htool_security_v2.h"
 #include "protocol/host_cmd.h"
+#include "protocol/security_v2.h"
 #include "protocol/security_version.h"
 #include "tools/common/htool_cmd.h"
 #include "tools/common/macros.h"
@@ -123,7 +123,7 @@ static int htool_get_tokens_in_set(const struct htool_invocation* inv,
                                   sizeof(set_idx) + sizeof(challenge)] = {};
       uint8_t response_storage_hdr[MAX_TOKEN_RESPONSE_SIZE] = {};
 
-      struct security_v2_param request_params[] = {
+      struct libhoth_security_v2_param request_params[] = {
           {
               .data = &set_idx,
               .size = sizeof(set_idx),
@@ -132,22 +132,23 @@ static int htool_get_tokens_in_set(const struct htool_invocation* inv,
               .data = &challenge,
               .size = sizeof(challenge),
           }};
-      const struct security_v2_serialized_param* tokens_param = NULL;
-      const struct security_v2_serialized_param* sig_param = NULL;
-      const struct security_v2_serialized_param* boot_nonce_param = NULL;
-      const struct security_v2_serialized_param** response_params[] = {
+      const struct libhoth_security_v2_serialized_param* tokens_param = NULL;
+      const struct libhoth_security_v2_serialized_param* sig_param = NULL;
+      const struct libhoth_security_v2_serialized_param* boot_nonce_param =
+          NULL;
+      const struct libhoth_security_v2_serialized_param** response_params[] = {
           &tokens_param, &boot_nonce_param, &sig_param};
       // Gets the Tokens in the given Set
-      int hoth_status = htool_exec_security_v2_serialized_cmd(
+      int hoth_status = libhoth_security_v2_exec_serialized(
           dev, /*major=*/
           HOTH_PRV_CMD_HOTH_SECURITY_V2_TOKENS_MAJOR_COMMAND,
           /*minor=*/
           HOTH_PRV_CMD_HOTH_SECURITY_V2_GET_TOKENS_IN_SET_MINOR_COMMAND,
           /*base_command=*/HOTH_BASE_CMD(HOTH_PRV_CMD_HOTH_SECURITY_V2),
-          SECURITY_V2_BUFFER_PARAM(request_storage_hdr), request_params,
+          LIBHOTH_SECURITY_V2_BUFFER_PARAM(request_storage_hdr), request_params,
           ARRAY_SIZE(request_params),
-          SECURITY_V2_BUFFER_PARAM(response_storage_hdr), response_params,
-          ARRAY_SIZE(response_params));
+          LIBHOTH_SECURITY_V2_BUFFER_PARAM(response_storage_hdr),
+          response_params, ARRAY_SIZE(response_params));
       if (hoth_status != 0) {
         printf(
             "Unexpected Error: Returned status %d, while trying to send "
@@ -285,13 +286,13 @@ static int htool_get_token_set_count(const struct htool_invocation* inv,
                                    sizeof(uint32_t) + sizeof(boot_nonce) +
                                    sizeof(signature)] = {};
 
-      struct security_v2_param request_params[] = {
+      struct libhoth_security_v2_param request_params[] = {
           {
               .data = &challenge,
               .size = sizeof(challenge),
           },
       };
-      struct security_v2_param response_params[] = {
+      struct libhoth_security_v2_param response_params[] = {
           {
               .data = num_ids,
               .size = sizeof(*num_ids),
@@ -307,16 +308,16 @@ static int htool_get_token_set_count(const struct htool_invocation* inv,
 
       };
       // Gets the number of Token Sets
-      int hoth_status = htool_exec_security_v2_cmd(
+      int hoth_status = libhoth_security_v2_exec(
           dev, /*major=*/
           HOTH_PRV_CMD_HOTH_SECURITY_V2_TOKENS_MAJOR_COMMAND,
           /*minor=*/
           HOTH_PRV_CMD_HOTH_SECURITY_V2_GET_TOKEN_SET_COUNT_MINOR_COMMAND,
           /*base_command=*/HOTH_BASE_CMD(HOTH_PRV_CMD_HOTH_SECURITY_V2),
-          SECURITY_V2_BUFFER_PARAM(request_storage_hdr), request_params,
+          LIBHOTH_SECURITY_V2_BUFFER_PARAM(request_storage_hdr), request_params,
           ARRAY_SIZE(request_params),
-          SECURITY_V2_BUFFER_PARAM(response_storage_hdr), response_params,
-          ARRAY_SIZE(response_params));
+          LIBHOTH_SECURITY_V2_BUFFER_PARAM(response_storage_hdr),
+          response_params, ARRAY_SIZE(response_params));
       if (hoth_status != 0) {
         printf(
             "Unexpected Error: Returned status %d, while trying to send "
@@ -412,7 +413,7 @@ static int htool_get_token_set_info(const struct htool_invocation* inv,
                                    sizeof(info) + sizeof(boot_nonce) +
                                    sizeof(signature)] = {};
 
-      struct security_v2_param request_params[] = {
+      struct libhoth_security_v2_param request_params[] = {
           {
               .data = &set_idx,
               .size = sizeof(set_idx),
@@ -422,7 +423,7 @@ static int htool_get_token_set_info(const struct htool_invocation* inv,
               .size = sizeof(challenge),
           },
       };
-      struct security_v2_param response_params[] = {
+      struct libhoth_security_v2_param response_params[] = {
           {
               .data = &info,
               .size = sizeof(info),
@@ -438,16 +439,16 @@ static int htool_get_token_set_info(const struct htool_invocation* inv,
 
       };
       // Gets the Token Set Info
-      int hoth_status = htool_exec_security_v2_cmd(
+      int hoth_status = libhoth_security_v2_exec(
           dev, /*major=*/
           HOTH_PRV_CMD_HOTH_SECURITY_V2_TOKENS_MAJOR_COMMAND,
           /*minor=*/
           HOTH_PRV_CMD_HOTH_SECURITY_V2_GET_TOKEN_SET_INFO_MINOR_COMMAND,
           /*base_command=*/HOTH_BASE_CMD(HOTH_PRV_CMD_HOTH_SECURITY_V2),
-          SECURITY_V2_BUFFER_PARAM(request_storage_hdr), request_params,
+          LIBHOTH_SECURITY_V2_BUFFER_PARAM(request_storage_hdr), request_params,
           ARRAY_SIZE(request_params),
-          SECURITY_V2_BUFFER_PARAM(response_storage_hdr), response_params,
-          ARRAY_SIZE(response_params));
+          LIBHOTH_SECURITY_V2_BUFFER_PARAM(response_storage_hdr),
+          response_params, ARRAY_SIZE(response_params));
       if (hoth_status != 0) {
         printf(
             "Unexpected Error: Returned status %d, while trying to send "

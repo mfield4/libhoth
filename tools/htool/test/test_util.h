@@ -16,12 +16,12 @@
 #include <vector>
 
 #include "protocol/host_cmd.h"
+#include "protocol/security_v2.h"
 #include "protocol/security_version.h"
 #include "protocol/test/libhoth_device_mock.h"
 #include "tools/common/htool_cmd.h"
 #include "tools/htool/host_commands.h"
 #include "tools/htool/htool.h"
-#include "tools/htool/htool_security_v2.h"
 #include "transports/libhoth_device.h"
 
 using ::testing::_;
@@ -67,35 +67,37 @@ class HtoolInvocationMock {
 libhoth_security_version libhoth_get_security_version(
     struct libhoth_device* dev);
 
-// Mock for htool_exec_security_v2_cmd
+// Mock for libhoth_security_v2_exec
 class HtoolSecurityV2Mock {
  public:
   virtual ~HtoolSecurityV2Mock() = default;
-  MOCK_METHOD(int, htool_exec_security_v2_cmd,
+  MOCK_METHOD(int, libhoth_security_v2_exec,
               (struct libhoth_device * dev, uint8_t major, uint8_t minor,
-               uint16_t base_command, struct security_v2_buffer* request_buffer,
-               const struct security_v2_param* request_params,
+               uint16_t base_command,
+               struct libhoth_security_v2_buffer* request_buffer,
+               const struct libhoth_security_v2_param* request_params,
                uint16_t request_param_count,
-               struct security_v2_buffer* response_buffer,
-               struct security_v2_param* response_params,
+               struct libhoth_security_v2_buffer* response_buffer,
+               struct libhoth_security_v2_param* response_params,
                uint16_t response_param_count));
 };
 
-// Mock for htool_exec_security_v2_serialized_cmd
+// Mock for libhoth_security_v2_exec_serialized
 class HtoolSecurityV2SerializedMock {
  public:
   virtual ~HtoolSecurityV2SerializedMock() = default;
-  MOCK_METHOD(int, htool_exec_security_v2_serialized_cmd,
-              (struct libhoth_device * dev, uint8_t major, uint8_t minor,
-               uint16_t base_command, struct security_v2_buffer* request_buffer,
-               const struct security_v2_param* request_params,
-               uint16_t request_param_count,
-               struct security_v2_buffer* response_buffer,
-               const struct security_v2_serialized_param** response_params[],
-               uint16_t response_param_count));
+  MOCK_METHOD(
+      int, libhoth_security_v2_exec_serialized,
+      (struct libhoth_device * dev, uint8_t major, uint8_t minor,
+       uint16_t base_command, struct libhoth_security_v2_buffer* request_buffer,
+       const struct libhoth_security_v2_param* request_params,
+       uint16_t request_param_count,
+       struct libhoth_security_v2_buffer* response_buffer,
+       const struct libhoth_security_v2_serialized_param** response_params[],
+       uint16_t response_param_count));
 };
 
-// Custom matcher for htool_exec_security_v2_cmd arguments.
+// Custom matcher for libhoth_security_v2_exec arguments.
 MATCHER_P5(IsSecurityV2Command, expected_major, expected_minor,
            expected_base_command, expected_request_buffer_size,
            expected_response_buffer_size, "") {
@@ -114,7 +116,7 @@ MATCHER_P5(IsSecurityV2Command, expected_major, expected_minor,
                      << expected_base_command;
     return false;
   }
-  const struct security_v2_buffer* request_buffer = std::get<4>(arg);
+  const struct libhoth_security_v2_buffer* request_buffer = std::get<4>(arg);
   if (request_buffer == nullptr) {
     *result_listener << "request_buffer is null";
     return false;
@@ -128,7 +130,7 @@ MATCHER_P5(IsSecurityV2Command, expected_major, expected_minor,
     *result_listener << "request_buffer->data is null";
     return false;
   }
-  const struct security_v2_buffer* response_buffer = std::get<7>(arg);
+  const struct libhoth_security_v2_buffer* response_buffer = std::get<7>(arg);
   if (response_buffer == nullptr) {
     *result_listener << "response_buffer is null";
     return false;
@@ -145,7 +147,7 @@ MATCHER_P5(IsSecurityV2Command, expected_major, expected_minor,
   return true;
 }
 
-// Custom matcher for htool_exec_security_v2_serialized_cmd arguments.
+// Custom matcher for libhoth_security_v2_exec_serialized arguments.
 MATCHER_P5(IsSecurityV2SerializedCommand, expected_major, expected_minor,
            expected_base_command, expected_request_buffer_size,
            expected_response_buffer_size, "") {
@@ -164,7 +166,7 @@ MATCHER_P5(IsSecurityV2SerializedCommand, expected_major, expected_minor,
                      << expected_base_command;
     return false;
   }
-  const struct security_v2_buffer* request_buffer = std::get<4>(arg);
+  const struct libhoth_security_v2_buffer* request_buffer = std::get<4>(arg);
   if (request_buffer == nullptr) {
     *result_listener << "request_buffer is null";
     return false;
@@ -178,7 +180,7 @@ MATCHER_P5(IsSecurityV2SerializedCommand, expected_major, expected_minor,
     *result_listener << "request_buffer->data is null";
     return false;
   }
-  const struct security_v2_buffer* response_buffer = std::get<7>(arg);
+  const struct libhoth_security_v2_buffer* response_buffer = std::get<7>(arg);
   if (response_buffer == nullptr) {
     *result_listener << "response_buffer is null";
     return false;
@@ -195,9 +197,9 @@ MATCHER_P5(IsSecurityV2SerializedCommand, expected_major, expected_minor,
   return true;
 }
 
-// Custom matcher for security_v2_param arrays.
+// Custom matcher for libhoth_security_v2_param arrays.
 MATCHER_P(RequestParamsMatch, expected_params, "") {
-  const struct security_v2_param* request_params = std::get<5>(arg);
+  const struct libhoth_security_v2_param* request_params = std::get<5>(arg);
   uint16_t request_param_count = std::get<6>(arg);
 
   if (request_param_count != expected_params.size()) {
@@ -213,52 +215,53 @@ MATCHER_P(RequestParamsMatch, expected_params, "") {
                        << expected_params[i].size;
       return false;
     }
-    // We are not comparing the request data since most of the security_v2_param
-    // are randomly generated, so there is no value in comparing the data.
+    // We are not comparing the request data since most of the
+    // libhoth_security_v2_param are randomly generated, so there is no value in
+    // comparing the data.
   }
   return true;
 }
 
 ACTION_P(SetSerializedV2TokenResponse, tokens) {
   // arg7 is response_buffer, arg8 is response_params
-  struct security_v2_buffer* response_buffer = std::get<7>(args);
-  const struct security_v2_serialized_param*** response_params_ptr =
-      (const struct security_v2_serialized_param***)std::get<8>(args);
+  struct libhoth_security_v2_buffer* response_buffer = std::get<7>(args);
+  const struct libhoth_security_v2_serialized_param*** response_params_ptr =
+      (const struct libhoth_security_v2_serialized_param***)std::get<8>(args);
 
   std::vector<uint8_t> response;
-  struct security_v2_serialized_response_hdr hdr = {.param_count = 3,
-                                                    .reserved = 0};
+  struct libhoth_security_v2_serialized_response_hdr hdr = {.param_count = 3,
+                                                            .reserved = 0};
   response.insert(response.end(), (uint8_t*)&hdr, (uint8_t*)&hdr + sizeof(hdr));
 
   // Param 1: tokens
-  struct security_v2_serialized_param tokens_param_hdr = {
+  struct libhoth_security_v2_serialized_param tokens_param_hdr = {
       .size = (uint16_t)tokens.size(), .reserved = 0};
   response.insert(response.end(), (uint8_t*)&tokens_param_hdr,
                   (uint8_t*)&tokens_param_hdr + sizeof(tokens_param_hdr));
   response.insert(response.end(), tokens.begin(), tokens.end());
-  size_t padding = padding_size(tokens.size());
+  size_t padding = libhoth_security_v2_padding_size(tokens.size());
   response.insert(response.end(), padding, 0);
 
   // Param 2: boot_nonce (dummy)
   struct boot_nonce dummy_nonce = {};
-  struct security_v2_serialized_param nonce_param_hdr = {
+  struct libhoth_security_v2_serialized_param nonce_param_hdr = {
       .size = sizeof(dummy_nonce), .reserved = 0};
   response.insert(response.end(), (uint8_t*)&nonce_param_hdr,
                   (uint8_t*)&nonce_param_hdr + sizeof(nonce_param_hdr));
   response.insert(response.end(), (uint8_t*)&dummy_nonce,
                   (uint8_t*)&dummy_nonce + sizeof(dummy_nonce));
-  padding = padding_size(sizeof(dummy_nonce));
+  padding = libhoth_security_v2_padding_size(sizeof(dummy_nonce));
   response.insert(response.end(), padding, 0);
 
   // Param 3: signature (dummy)
   struct detached_challenge_response_signature dummy_sig = {};
-  struct security_v2_serialized_param sig_param_hdr = {
+  struct libhoth_security_v2_serialized_param sig_param_hdr = {
       .size = sizeof(dummy_sig), .reserved = 0};
   response.insert(response.end(), (uint8_t*)&sig_param_hdr,
                   (uint8_t*)&sig_param_hdr + sizeof(sig_param_hdr));
   response.insert(response.end(), (uint8_t*)&dummy_sig,
                   (uint8_t*)&dummy_sig + sizeof(dummy_sig));
-  padding = padding_size(sizeof(dummy_sig));
+  padding = libhoth_security_v2_padding_size(sizeof(dummy_sig));
   response.insert(response.end(), padding, 0);
 
   memcpy(response_buffer->data, response.data(), response.size());
@@ -267,21 +270,24 @@ ACTION_P(SetSerializedV2TokenResponse, tokens) {
   uint8_t* current = response_buffer->data;
   current += sizeof(hdr);  // skip response header
 
-  *response_params_ptr[0] = (const struct security_v2_serialized_param*)current;
+  *response_params_ptr[0] =
+      (const struct libhoth_security_v2_serialized_param*)current;
   current += sizeof(tokens_param_hdr) + tokens_param_hdr.size +
-             padding_size(tokens_param_hdr.size);
+             libhoth_security_v2_padding_size(tokens_param_hdr.size);
 
-  *response_params_ptr[1] = (const struct security_v2_serialized_param*)current;
+  *response_params_ptr[1] =
+      (const struct libhoth_security_v2_serialized_param*)current;
   current += sizeof(nonce_param_hdr) + nonce_param_hdr.size +
-             padding_size(nonce_param_hdr.size);
+             libhoth_security_v2_padding_size(nonce_param_hdr.size);
 
-  *response_params_ptr[2] = (const struct security_v2_serialized_param*)current;
+  *response_params_ptr[2] =
+      (const struct libhoth_security_v2_serialized_param*)current;
 }
 
 ACTION_P3(SetSecurityV2Response, num_ids, boot_nonce, signature) {
   // arg8 is response_params
-  struct security_v2_param* response_params =
-      (struct security_v2_param*)std::get<8>(args);
+  struct libhoth_security_v2_param* response_params =
+      (struct libhoth_security_v2_param*)std::get<8>(args);
   memcpy(response_params[0].data, &num_ids, sizeof(num_ids));
   memcpy(response_params[1].data, &boot_nonce, sizeof(boot_nonce));
   memcpy(response_params[2].data, &signature, sizeof(signature));
@@ -289,8 +295,8 @@ ACTION_P3(SetSecurityV2Response, num_ids, boot_nonce, signature) {
 
 ACTION_P(SetSecurityV2TokenSetInfoResponse, info) {
   // arg8 is response_params
-  struct security_v2_param* response_params =
-      (struct security_v2_param*)std::get<8>(args);
+  struct libhoth_security_v2_param* response_params =
+      (struct libhoth_security_v2_param*)std::get<8>(args);
   memcpy(response_params[0].data, &info, sizeof(struct token_set_info));
   struct boot_nonce dummy_nonce = {};
   memcpy(response_params[1].data, &dummy_nonce, sizeof(dummy_nonce));

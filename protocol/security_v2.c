@@ -1,18 +1,17 @@
-#include "htool_security_v2.h"
+#include "protocol/security_v2.h"
 
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "host_commands.h"
-#include "htool.h"
 #include "protocol/host_cmd.h"
 #include "transports/libhoth_device.h"
 
 // Marks `bytes` as consumed in `buffer` and returns a pointer to the start of
 // the allocated region. Returns NULL if there are insufficient bytes.
-static void* consume_bytes(struct security_v2_buffer* buffer, uint16_t bytes) {
+static void* consume_bytes(struct libhoth_security_v2_buffer* buffer,
+                           uint16_t bytes) {
   if (buffer->bytes_consumed > buffer->size ||
       buffer->size - buffer->bytes_consumed < bytes) {
     return NULL;
@@ -23,14 +22,14 @@ static void* consume_bytes(struct security_v2_buffer* buffer, uint16_t bytes) {
   return output;
 }
 
-int htool_exec_security_v2_cmd(struct libhoth_device* dev, uint8_t major,
-                               uint8_t minor, uint16_t base_command,
-                               struct security_v2_buffer* request_buffer,
-                               const struct security_v2_param* request_params,
-                               uint16_t request_param_count,
-                               struct security_v2_buffer* response_buffer,
-                               struct security_v2_param* response_params,
-                               uint16_t response_param_count) {
+int libhoth_security_v2_exec(
+    struct libhoth_device* dev, uint8_t major, uint8_t minor,
+    uint16_t base_command, struct libhoth_security_v2_buffer* request_buffer,
+    const struct libhoth_security_v2_param* request_params,
+    uint16_t request_param_count,
+    struct libhoth_security_v2_buffer* response_buffer,
+    struct libhoth_security_v2_param* response_params,
+    uint16_t response_param_count) {
   struct hoth_security_v2_request_header* request_header =
       consume_bytes(request_buffer, sizeof(*request_header));
   if (!request_header) {
@@ -50,9 +49,10 @@ int htool_exec_security_v2_cmd(struct libhoth_device* dev, uint8_t major,
     }
     request_param->size = request_params[i].size;
 
-    uint8_t* request_param_value =
-        consume_bytes(request_buffer, request_params[i].size +
-                                          padding_size(request_params[i].size));
+    uint8_t* request_param_value = consume_bytes(
+        request_buffer,
+        request_params[i].size +
+            libhoth_security_v2_padding_size(request_params[i].size));
     if (!request_param_value) {
       fprintf(stderr, "insufficient bytes for request param %d\n", i);
       return -1;
@@ -67,7 +67,7 @@ int htool_exec_security_v2_cmd(struct libhoth_device* dev, uint8_t major,
                                     request_buffer->size, response_buffer->data,
                                     response_buffer->size, &bytes_read);
   if (status != 0) {
-    // htool_exec_hostcmd logs to stderr, don't repeat here.
+    // libhoth_hostcmd_exec logs to stderr, don't repeat here.
     return status;
   }
   response_buffer->size = (uint16_t)bytes_read;
@@ -108,7 +108,8 @@ int htool_exec_security_v2_cmd(struct libhoth_device* dev, uint8_t major,
 
     uint8_t* response_param_value = consume_bytes(
         response_buffer,
-        response_params[i].size + padding_size(response_params[i].size));
+        response_params[i].size +
+            libhoth_security_v2_padding_size(response_params[i].size));
     if (!response_param_value) {
       fprintf(stderr, "insufficient bytes for response param %d\n", i);
       return -1;
@@ -121,9 +122,9 @@ int htool_exec_security_v2_cmd(struct libhoth_device* dev, uint8_t major,
 }
 
 static int read_security_v2_serialized_header(
-    struct security_v2_buffer* buffer,
-    const struct security_v2_serialized_response_hdr** header) {
-  const struct security_v2_serialized_response_hdr* response_header;
+    struct libhoth_security_v2_buffer* buffer,
+    const struct libhoth_security_v2_serialized_response_hdr** header) {
+  const struct libhoth_security_v2_serialized_response_hdr* response_header;
 
   if (!buffer || !header) {
     fprintf(stderr, "Arguments cannot be NULL");
@@ -131,8 +132,8 @@ static int read_security_v2_serialized_header(
   }
 
   // Read the response's header.
-  response_header =
-      consume_bytes(buffer, sizeof(struct security_v2_serialized_response_hdr));
+  response_header = consume_bytes(
+      buffer, sizeof(struct libhoth_security_v2_serialized_response_hdr));
   if (!response_header) {
     fprintf(stderr, "Failed to initialize response, cannot read header.");
     return -1;
@@ -149,10 +150,10 @@ static int read_security_v2_serialized_header(
 }
 
 static int validate_param_padding(
-    struct security_v2_buffer* buffer,
-    const struct security_v2_serialized_param* param) {
+    struct libhoth_security_v2_buffer* buffer,
+    const struct libhoth_security_v2_serialized_param* param) {
   const uint8_t* padding;
-  size_t param_padding_size = padding_size(param->size);
+  size_t param_padding_size = libhoth_security_v2_padding_size(param->size);
   int i;
 
   if (param_padding_size == 0) {
@@ -182,8 +183,8 @@ static int validate_param_padding(
 }
 
 static int read_security_v2_serialized_params(
-    struct security_v2_buffer* buffer,
-    const struct security_v2_serialized_param** param) {
+    struct libhoth_security_v2_buffer* buffer,
+    const struct libhoth_security_v2_serialized_param** param) {
   const uint8_t* value;
   if (!buffer || !param) {
     fprintf(stderr,
@@ -218,16 +219,17 @@ static int read_security_v2_serialized_params(
   return 0;
 }
 
-int htool_exec_security_v2_serialized_cmd(
+int libhoth_security_v2_exec_serialized(
     struct libhoth_device* dev, uint8_t major, uint8_t minor,
-    uint16_t base_command, struct security_v2_buffer* request_buffer,
-    const struct security_v2_param* request_params,
-    uint16_t request_param_count, struct security_v2_buffer* response_buffer,
-    const struct security_v2_serialized_param** response_params[],
+    uint16_t base_command, struct libhoth_security_v2_buffer* request_buffer,
+    const struct libhoth_security_v2_param* request_params,
+    uint16_t request_param_count,
+    struct libhoth_security_v2_buffer* response_buffer,
+    const struct libhoth_security_v2_serialized_param** response_params[],
     uint16_t response_param_count) {
   int status = 0;
-  const struct security_v2_serialized_response_hdr* response_hdr;
-  status = htool_exec_security_v2_cmd(
+  const struct libhoth_security_v2_serialized_response_hdr* response_hdr;
+  status = libhoth_security_v2_exec(
       dev, major, minor, base_command, request_buffer, request_params,
       request_param_count, response_buffer, /*response_params=*/NULL,
       /*response_param_count=*/0);
@@ -256,8 +258,9 @@ int htool_exec_security_v2_serialized_cmd(
   return status;
 }
 
-int copy_param(const struct security_v2_serialized_param* param, void* output,
-               size_t output_size) {
+int libhoth_security_v2_copy_param(
+    const struct libhoth_security_v2_serialized_param* param, void* output,
+    size_t output_size) {
   if (param->size != output_size) {
     fprintf(stderr,
             "Parameter is too large (%u bytes) to fit in "

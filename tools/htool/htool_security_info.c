@@ -6,8 +6,8 @@
 
 #include "host_commands.h"
 #include "htool.h"
-#include "htool_security_v2.h"
 #include "protocol/rot_firmware_version.h"
+#include "protocol/security_v2.h"
 #include "protocol/security_version.h"
 #include "tools/common/macros.h"
 
@@ -30,19 +30,19 @@ int htool_info(const struct htool_invocation* inv) {
         uint8_t response_storage_hdr[HOTH_SECURITY_V2_RESPONSE_SIZE(1) +
                                      sizeof(struct hoth_info)] = {};
 
-        struct security_v2_param response_params[] = {
+        struct libhoth_security_v2_param response_params[] = {
             {
                 .data = &info,
                 .size = sizeof(struct hoth_info),
             },
         };
-        int status = htool_exec_security_v2_cmd(
+        int status = libhoth_security_v2_exec(
             dev, /*major=*/HOTH_PRV_CMD_HOTH_SECURITY_V2_INFO_MAJOR_COMMAND,
             /*minor=*/0,
             /*base_command=*/HOTH_BASE_CMD(HOTH_PRV_CMD_HOTH_SECURITY_V2),
-            SECURITY_V2_BUFFER_PARAM(request_storage_hdr), NULL, 0,
-            SECURITY_V2_BUFFER_PARAM(response_storage_hdr), response_params,
-            ARRAY_SIZE(response_params));
+            LIBHOTH_SECURITY_V2_BUFFER_PARAM(request_storage_hdr), NULL, 0,
+            LIBHOTH_SECURITY_V2_BUFFER_PARAM(response_storage_hdr),
+            response_params, ARRAY_SIZE(response_params));
         if (status != 0) {
           return status;
         }

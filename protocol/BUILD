@@ -712,9 +712,24 @@ cc_library(
 
 cc_library(
     name = "security_v2",
+    srcs = ["security_v2.c"],
     hdrs = ["security_v2.h"],
     deps = [
         ":host_cmd",
+        "//transports:libhoth_device",
+    ],
+)
+
+cc_test(
+    name = "security_v2_test",
+    srcs = ["security_v2_test.cc"],
+    deps = [
+        ":host_cmd",
+        ":security_v2",
+        "//protocol/test:libhoth_device_mock",
+        "//transports:libhoth_device",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
     ],
 )
 

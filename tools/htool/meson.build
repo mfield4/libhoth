@@ -52,13 +52,10 @@ htool_lib = static_library(
         'htool_secure_boot.c',
         'htool_srtm.h',
         'htool_srtm.c',
-        'htool_security_v2.h',
-        'htool_security_v2.c',
         'htool_security_info.h',
         'htool_security_info.c',
         'htool_provisioning.h',
         'htool_provisioning.c',
-        'htool_security_v2_defs.h',
         'htool_security_certificates.h',
         'htool_security_certificates.c',
         'htool_security_tokens.h',
@@ -109,7 +106,6 @@ if gtest_dep.found() and gmock_dep.found()
         'htool_provisioning_test': ['htool_provisioning.c'],
         'htool_security_certificates_test': ['htool_security_certificates.c'],
         'htool_security_tokens_test': ['htool_security_tokens.c'],
-        'htool_security_v2_test': ['htool_security_v2.h', 'htool_security_v2.c'],
     }
     foreach name, module_srcs : htool_module_tests
         foreach variant : ['', '_asan']

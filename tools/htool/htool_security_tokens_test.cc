@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-#include "htool_security_v2.h"
+#include "protocol/security_v2.h"
 #include "protocol/security_version.h"
 #include "protocol/test/libhoth_device_mock.h"
 #include "tools/htool/test/test_util.h"
@@ -59,14 +59,16 @@ extern "C" int htool_get_param_u32(const struct htool_invocation* inv,
   return -1;
 }
 
-extern "C" int htool_exec_security_v2_cmd(
+extern "C" int libhoth_security_v2_exec(
     struct libhoth_device* dev, uint8_t major, uint8_t minor,
-    uint16_t base_command, struct security_v2_buffer* request_buffer,
-    const struct security_v2_param* request_params,
-    uint16_t request_param_count, struct security_v2_buffer* response_buffer,
-    struct security_v2_param* response_params, uint16_t response_param_count) {
+    uint16_t base_command, struct libhoth_security_v2_buffer* request_buffer,
+    const struct libhoth_security_v2_param* request_params,
+    uint16_t request_param_count,
+    struct libhoth_security_v2_buffer* response_buffer,
+    struct libhoth_security_v2_param* response_params,
+    uint16_t response_param_count) {
   if (g_htool_security_v2_mock) {
-    return g_htool_security_v2_mock->htool_exec_security_v2_cmd(
+    return g_htool_security_v2_mock->libhoth_security_v2_exec(
         dev, major, minor, base_command, request_buffer, request_params,
         request_param_count, response_buffer, response_params,
         response_param_count);
@@ -74,16 +76,17 @@ extern "C" int htool_exec_security_v2_cmd(
   return -1;
 }
 
-extern "C" int htool_exec_security_v2_serialized_cmd(
+extern "C" int libhoth_security_v2_exec_serialized(
     struct libhoth_device* dev, uint8_t major, uint8_t minor,
-    uint16_t base_command, struct security_v2_buffer* request_buffer,
-    const struct security_v2_param* request_params,
-    uint16_t request_param_count, struct security_v2_buffer* response_buffer,
-    const struct security_v2_serialized_param** response_params[],
+    uint16_t base_command, struct libhoth_security_v2_buffer* request_buffer,
+    const struct libhoth_security_v2_param* request_params,
+    uint16_t request_param_count,
+    struct libhoth_security_v2_buffer* response_buffer,
+    const struct libhoth_security_v2_serialized_param** response_params[],
     uint16_t response_param_count) {
   if (g_htool_security_v2_serialized_mock) {
     return g_htool_security_v2_serialized_mock
-        ->htool_exec_security_v2_serialized_cmd(
+        ->libhoth_security_v2_exec_serialized(
             dev, major, minor, base_command, request_buffer, request_params,
             request_param_count, response_buffer, response_params,
             response_param_count);
@@ -204,7 +207,7 @@ TEST_F(HtoolSecurityTokensTest, FetchAttestationSuccess) {
   };
 
   EXPECT_CALL(security_v2_mock_,
-              htool_exec_security_v2_cmd(_, _, _, _, _, _, _, _, _, _))
+              libhoth_security_v2_exec(_, _, _, _, _, _, _, _, _, _))
       .WillOnce(DoAll(SetSecurityV2Response(num_ids, boot_nonce, signature),
                       Return(0)))
       .WillRepeatedly(
@@ -215,9 +218,8 @@ TEST_F(HtoolSecurityTokensTest, FetchAttestationSuccess) {
   for (size_t i = 0; i < tokens.size(); ++i) {
     tokens[i] = i;
   }
-  EXPECT_CALL(
-      security_v2_serialized_mock_,
-      htool_exec_security_v2_serialized_cmd(_, _, _, _, _, _, _, _, _, _))
+  EXPECT_CALL(security_v2_serialized_mock_,
+              libhoth_security_v2_exec_serialized(_, _, _, _, _, _, _, _, _, _))
       .Times(num_ids)
       .WillRepeatedly(DoAll(SetSerializedV2TokenResponse(tokens), Return(0)));
 
@@ -272,7 +274,7 @@ TEST_F(HtoolSecurityTokensTest, FetchAttestationGetCountFails) {
                 Return(0)));
 
   EXPECT_CALL(security_v2_mock_,
-              htool_exec_security_v2_cmd(_, _, _, _, _, _, _, _, _, _))
+              libhoth_security_v2_exec(_, _, _, _, _, _, _, _, _, _))
       .WillOnce(Return(-1));
 
   ASSERT_NE(htool_fetch_attestation(&inv), 0);
@@ -321,14 +323,13 @@ TEST_F(HtoolSecurityTokensTest, FetchAttestationGetTokensFails) {
   struct boot_nonce boot_nonce = {};
   struct detached_challenge_response_signature signature = {};
   EXPECT_CALL(security_v2_mock_,
-              htool_exec_security_v2_cmd(_, _, _, _, _, _, _, _, _, _))
+              libhoth_security_v2_exec(_, _, _, _, _, _, _, _, _, _))
       .WillOnce(DoAll(SetSecurityV2Response(num_ids, boot_nonce, signature),
                       Return(0)));
 
   // Mock for htool_get_tokens_in_set to fail
-  EXPECT_CALL(
-      security_v2_serialized_mock_,
-      htool_exec_security_v2_serialized_cmd(_, _, _, _, _, _, _, _, _, _))
+  EXPECT_CALL(security_v2_serialized_mock_,
+              libhoth_security_v2_exec_serialized(_, _, _, _, _, _, _, _, _, _))
       .WillOnce(Return(-1));
 
   ASSERT_NE(htool_fetch_attestation(&inv), 0);
@@ -381,16 +382,15 @@ TEST_F(HtoolSecurityTokensTest, FetchAttestationGetInfoFails) {
   struct boot_nonce boot_nonce = {};
   struct detached_challenge_response_signature signature = {};
   EXPECT_CALL(security_v2_mock_,
-              htool_exec_security_v2_cmd(_, _, _, _, _, _, _, _, _, _))
+              libhoth_security_v2_exec(_, _, _, _, _, _, _, _, _, _))
       .WillOnce(DoAll(SetSecurityV2Response(num_ids, boot_nonce, signature),
                       Return(0)))
       .WillOnce(Return(-1));
 
   // Mock for htool_get_tokens_in_set to succeed
   std::vector<uint8_t> tokens(TOKEN_BYTE_SIZE * 3);  // 3 tokens
-  EXPECT_CALL(
-      security_v2_serialized_mock_,
-      htool_exec_security_v2_serialized_cmd(_, _, _, _, _, _, _, _, _, _))
+  EXPECT_CALL(security_v2_serialized_mock_,
+              libhoth_security_v2_exec_serialized(_, _, _, _, _, _, _, _, _, _))
       .WillOnce(DoAll(SetSerializedV2TokenResponse(tokens), Return(0)));
 
   ASSERT_NE(htool_fetch_attestation(&inv), 0);
@@ -433,7 +433,7 @@ TEST_F(HtoolSecurityTokensTest, FetchAttestationSuccessWithAttestationFile) {
   };
 
   EXPECT_CALL(security_v2_mock_,
-              htool_exec_security_v2_cmd(_, _, _, _, _, _, _, _, _, _))
+              libhoth_security_v2_exec(_, _, _, _, _, _, _, _, _, _))
       .WillOnce(DoAll(SetSecurityV2Response(num_ids, boot_nonce, signature),
                       Return(0)))
       .WillOnce(DoAll(SetSecurityV2TokenSetInfoResponse(info), Return(0)));
@@ -444,9 +444,8 @@ TEST_F(HtoolSecurityTokensTest, FetchAttestationSuccessWithAttestationFile) {
     tokens[i] = i;
   }
 
-  EXPECT_CALL(
-      security_v2_serialized_mock_,
-      htool_exec_security_v2_serialized_cmd(_, _, _, _, _, _, _, _, _, _))
+  EXPECT_CALL(security_v2_serialized_mock_,
+              libhoth_security_v2_exec_serialized(_, _, _, _, _, _, _, _, _, _))
       .WillOnce(DoAll(SetSerializedV2TokenResponse(tokens), Return(0)));
 
   ASSERT_EQ(htool_fetch_attestation(&inv), 0);

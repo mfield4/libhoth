@@ -9,8 +9,8 @@
 
 #include "host_commands.h"
 #include "htool.h"
-#include "htool_security_v2.h"
 #include "protocol/host_cmd.h"
+#include "protocol/security_v2.h"
 #include "protocol/security_version.h"
 #include "tools/common/htool_cmd.h"
 #include "tools/common/macros.h"
@@ -45,20 +45,20 @@ static int get_cert_v2_data(const struct htool_invocation* inv,
       // Send Get Attestation Public Certificate Request
       uint8_t request_storage_hdr[HOTH_SECURITY_V2_REQUEST_SIZE(0)] = {};
 
-      struct security_v2_param response_params[] = {
+      struct libhoth_security_v2_param response_params[] = {
           {
               .data = cert,
               .size = cert_size,
           },
       };
-      int hoth_status = htool_exec_security_v2_cmd(
+      int hoth_status = libhoth_security_v2_exec(
           dev, /*major=*/
           major_command,
           /*minor=*/
           minor_command,
           /*base_command=*/HOTH_BASE_CMD(HOTH_PRV_CMD_HOTH_SECURITY_V2),
-          SECURITY_V2_BUFFER_PARAM(request_storage_hdr), NULL, 0,
-          SECURITY_V2_BUFFER_PARAM_WITH_VARIABLE_SIZE(
+          LIBHOTH_SECURITY_V2_BUFFER_PARAM(request_storage_hdr), NULL, 0,
+          LIBHOTH_SECURITY_V2_BUFFER_PARAM_WITH_VARIABLE_SIZE(
               response_storage_hdr, response_storage_hdr_size),
           response_params, ARRAY_SIZE(response_params));
       if (hoth_status != 0) {
@@ -231,7 +231,7 @@ int htool_get_device_id_cert(const struct htool_invocation* inv) {
                                    sizeof(certificate) +
                                    sizeof(endorsement_certificate)] = {};
 
-      struct security_v2_param response_params[] = {
+      struct libhoth_security_v2_param response_params[] = {
           {
               .data = &certificate,
               .size = sizeof(certificate),
@@ -244,14 +244,14 @@ int htool_get_device_id_cert(const struct htool_invocation* inv) {
       };
       // This single command returns both the device_id_certificate and the
       // device_id_endorsement_certificate
-      int hoth_status = htool_exec_security_v2_cmd(
+      int hoth_status = libhoth_security_v2_exec(
           dev, /*major=*/
           HOTH_PRV_CMD_HOTH_SECURITY_V2_GET_CERTIFICATES_MAJOR_COMMAND,
           /*minor=*/HOTH_PRV_CMD_HOTH_SECURITY_V2_GET_DEVICE_ID_MINOR_COMMAND,
           /*base_command=*/HOTH_BASE_CMD(HOTH_PRV_CMD_HOTH_SECURITY_V2),
-          SECURITY_V2_BUFFER_PARAM(request_storage_hdr), NULL, 0,
-          SECURITY_V2_BUFFER_PARAM(response_storage_hdr), response_params,
-          ARRAY_SIZE(response_params));
+          LIBHOTH_SECURITY_V2_BUFFER_PARAM(request_storage_hdr), NULL, 0,
+          LIBHOTH_SECURITY_V2_BUFFER_PARAM(response_storage_hdr),
+          response_params, ARRAY_SIZE(response_params));
       if (hoth_status != 0) {
         fprintf(stderr,
                 "Unexpected Error: Returned status %d, while trying to send "
@@ -340,14 +340,14 @@ static int exec_unload_attestation_key(struct libhoth_device* dev) {
   uint8_t request_storage_hdr[HOTH_SECURITY_V2_REQUEST_SIZE(0)] = {};
   uint8_t response_storage_hdr[HOTH_SECURITY_V2_RESPONSE_SIZE(0)] = {};
 
-  int hoth_status = htool_exec_security_v2_cmd(
+  int hoth_status = libhoth_security_v2_exec(
       dev,
       /*major=*/HOTH_PRV_CMD_HOTH_SECURITY_V2_GET_CERTIFICATES_MAJOR_COMMAND,
       /*minor=*/
       HOTH_PRV_CMD_HOTH_SECURITY_V2_UNLOAD_ATTESTATION_KEY_MINOR_COMMAND,
       /*base_command=*/HOTH_BASE_CMD(HOTH_PRV_CMD_HOTH_SECURITY_V2),
-      SECURITY_V2_BUFFER_PARAM(request_storage_hdr), NULL, 0,
-      SECURITY_V2_BUFFER_PARAM(response_storage_hdr), NULL, 0);
+      LIBHOTH_SECURITY_V2_BUFFER_PARAM(request_storage_hdr), NULL, 0,
+      LIBHOTH_SECURITY_V2_BUFFER_PARAM(response_storage_hdr), NULL, 0);
   if (hoth_status != 0) {
     fprintf(
         stderr,
@@ -365,7 +365,7 @@ static int exec_gen_attestation_key_v1(
   uint8_t response_storage_hdr[HOTH_SECURITY_V2_RESPONSE_SIZE(2) +
                                ATTESTATION_KEY_CSR_V1_SIZE +
                                WRAPPED_ATTESTATION_KEY_SIZE] = {};
-  struct security_v2_param response_params[] = {
+  struct libhoth_security_v2_param response_params[] = {
       {
           .data = csr,
           .size = ATTESTATION_KEY_CSR_V1_SIZE,
@@ -375,14 +375,14 @@ static int exec_gen_attestation_key_v1(
           .size = WRAPPED_ATTESTATION_KEY_SIZE,
       },
   };
-  int hoth_status = htool_exec_security_v2_cmd(
+  int hoth_status = libhoth_security_v2_exec(
       dev,
       /*major=*/HOTH_PRV_CMD_HOTH_SECURITY_V2_GET_CERTIFICATES_MAJOR_COMMAND,
       /*minor=*/
       HOTH_PRV_CMD_HOTH_SECURITY_V2_GEN_ATTESTATION_KEY_USING_CSR_V1_MINOR_COMMAND,
       /*base_command=*/HOTH_BASE_CMD(HOTH_PRV_CMD_HOTH_SECURITY_V2),
-      SECURITY_V2_BUFFER_PARAM(request_storage_hdr), NULL, 0,
-      SECURITY_V2_BUFFER_PARAM(response_storage_hdr), response_params,
+      LIBHOTH_SECURITY_V2_BUFFER_PARAM(request_storage_hdr), NULL, 0,
+      LIBHOTH_SECURITY_V2_BUFFER_PARAM(response_storage_hdr), response_params,
       ARRAY_SIZE(response_params));
   if (hoth_status != 0) {
     fprintf(
@@ -399,7 +399,7 @@ static int exec_gen_attestation_key_v2(
     uint8_t csr[ATTESTATION_KEY_CSR_V2_SIZE],
     uint8_t wrapped_key[WRAPPED_ATTESTATION_KEY_SIZE]) {
   uint32_t csr_version = 2;
-  struct security_v2_param request_params[] = {
+  struct libhoth_security_v2_param request_params[] = {
       {
           .data = &csr_version,
           .size = sizeof(csr_version),
@@ -415,7 +415,7 @@ static int exec_gen_attestation_key_v2(
   uint8_t response_storage_hdr[HOTH_SECURITY_V2_RESPONSE_SIZE(2) +
                                ATTESTATION_KEY_CSR_V2_SIZE +
                                WRAPPED_ATTESTATION_KEY_SIZE] = {};
-  struct security_v2_param response_params[] = {
+  struct libhoth_security_v2_param response_params[] = {
       {
           .data = csr,
           .size = ATTESTATION_KEY_CSR_V2_SIZE,
@@ -425,15 +425,15 @@ static int exec_gen_attestation_key_v2(
           .size = WRAPPED_ATTESTATION_KEY_SIZE,
       },
   };
-  int hoth_status = htool_exec_security_v2_cmd(
+  int hoth_status = libhoth_security_v2_exec(
       dev,
       /*major=*/HOTH_PRV_CMD_HOTH_SECURITY_V2_GET_CERTIFICATES_MAJOR_COMMAND,
       /*minor=*/
       HOTH_PRV_CMD_HOTH_SECURITY_V2_GEN_VERSIONED_ATTESTATION_KEY_MINOR_COMMAND,
       /*base_command=*/HOTH_BASE_CMD(HOTH_PRV_CMD_HOTH_SECURITY_V2),
-      SECURITY_V2_BUFFER_PARAM(request_storage_hdr), request_params,
+      LIBHOTH_SECURITY_V2_BUFFER_PARAM(request_storage_hdr), request_params,
       ARRAY_SIZE(request_params),
-      SECURITY_V2_BUFFER_PARAM(response_storage_hdr), response_params,
+      LIBHOTH_SECURITY_V2_BUFFER_PARAM(response_storage_hdr), response_params,
       ARRAY_SIZE(response_params));
   if (hoth_status != 0) {
     fprintf(
@@ -453,7 +453,7 @@ static int exec_load_attestation_key(
                               WRAPPED_ATTESTATION_KEY_SIZE +
                               ATTESTATION_CERT_SIZE] = {};
   uint8_t response_storage_hdr[HOTH_SECURITY_V2_RESPONSE_SIZE(0)] = {};
-  struct security_v2_param request_params[] = {
+  struct libhoth_security_v2_param request_params[] = {
       {
           .data = wrapped_key,
           .size = WRAPPED_ATTESTATION_KEY_SIZE,
@@ -463,15 +463,15 @@ static int exec_load_attestation_key(
           .size = ATTESTATION_CERT_SIZE,
       },
   };
-  int hoth_status = htool_exec_security_v2_cmd(
+  int hoth_status = libhoth_security_v2_exec(
       dev,
       /*major=*/HOTH_PRV_CMD_HOTH_SECURITY_V2_GET_CERTIFICATES_MAJOR_COMMAND,
       /*minor=*/
       HOTH_PRV_CMD_HOTH_SECURITY_V2_LOAD_ATTESTATION_KEY_MINOR_COMMAND,
       /*base_command=*/HOTH_BASE_CMD(HOTH_PRV_CMD_HOTH_SECURITY_V2),
-      SECURITY_V2_BUFFER_PARAM(request_storage_hdr), request_params,
+      LIBHOTH_SECURITY_V2_BUFFER_PARAM(request_storage_hdr), request_params,
       ARRAY_SIZE(request_params),
-      SECURITY_V2_BUFFER_PARAM(response_storage_hdr), NULL, 0);
+      LIBHOTH_SECURITY_V2_BUFFER_PARAM(response_storage_hdr), NULL, 0);
   if (hoth_status != 0) {
     fprintf(
         stderr,
@@ -490,7 +490,7 @@ static int exec_load_attestation_key_from_csr_v1(
                               WRAPPED_ATTESTATION_KEY_SIZE +
                               ATTESTATION_KEY_CSR_V1_SIZE] = {};
   uint8_t response_storage_hdr[HOTH_SECURITY_V2_RESPONSE_SIZE(0)] = {};
-  struct security_v2_param request_params[] = {
+  struct libhoth_security_v2_param request_params[] = {
       {
           .data = wrapped_key,
           .size = WRAPPED_ATTESTATION_KEY_SIZE,
@@ -500,15 +500,15 @@ static int exec_load_attestation_key_from_csr_v1(
           .size = ATTESTATION_KEY_CSR_V1_SIZE,
       },
   };
-  int hoth_status = htool_exec_security_v2_cmd(
+  int hoth_status = libhoth_security_v2_exec(
       dev,
       /*major=*/HOTH_PRV_CMD_HOTH_SECURITY_V2_GET_CERTIFICATES_MAJOR_COMMAND,
       /*minor=*/
       HOTH_PRV_CMD_HOTH_SECURITY_V2_LOAD_ATTESTATION_KEY_FROM_CSR_V1_MINOR_COMMAND,
       /*base_command=*/HOTH_BASE_CMD(HOTH_PRV_CMD_HOTH_SECURITY_V2),
-      SECURITY_V2_BUFFER_PARAM(request_storage_hdr), request_params,
+      LIBHOTH_SECURITY_V2_BUFFER_PARAM(request_storage_hdr), request_params,
       ARRAY_SIZE(request_params),
-      SECURITY_V2_BUFFER_PARAM(response_storage_hdr), NULL, 0);
+      LIBHOTH_SECURITY_V2_BUFFER_PARAM(response_storage_hdr), NULL, 0);
   if (hoth_status != 0) {
     fprintf(
         stderr,

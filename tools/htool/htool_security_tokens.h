@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "htool_security_v2_defs.h"
+#include "protocol/security_v2.h"
 
 #ifdef __cplusplus
 extern "C" {

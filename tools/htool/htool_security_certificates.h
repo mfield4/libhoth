@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "htool_security_v2_defs.h"
+#include "protocol/security_v2.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -11,7 +11,7 @@ extern "C" {
 
 // Forward declaration
 struct htool_invocation;
-struct security_v2_param;
+struct libhoth_security_v2_param;
 
 #define KEY_INFO_SIZE 4
 
