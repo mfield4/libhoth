@@ -213,6 +213,7 @@ cc_library(
         "//protocol:secure_boot",
         "//protocol:security_v2",
         "//protocol:security_version",
+        "//protocol:spi_passthrough",
         "//protocol:spi_proxy",
         "//protocol:statistics",
         "//protocol:target_reset",
