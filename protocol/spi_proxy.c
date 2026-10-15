@@ -283,10 +283,9 @@ libhoth_error libhoth_spi_proxy_init(struct libhoth_spi_proxy* spi,
         LIBHOTH_ERR_GET_CODE(status) == HOTH_RES_BUS_ERROR) {
       fprintf(stderr,
               "This is likely because the target device is not in reset, and "
-              "thus it "
-              "is not safe to use the SPI bus through a non-SPI transport. Try "
-              "using "
-              "'htool target reset on' to put the target in reset first.\n");
+              "thus it is not safe to use the SPI bus through a non-SPI "
+              "transport. Put the target in reset first (e.g. via the target "
+              "reset host command).\n");
     }
   }
   return status;
